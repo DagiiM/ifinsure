@@ -241,5 +241,5 @@ volumes:
 # =============================================================================
 networks:
   ifinsure_network:
-    name: ifinsure_network
-    driver: bridge
+    external: true
+
