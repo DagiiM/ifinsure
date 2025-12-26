@@ -660,15 +660,20 @@ setup_ssl() {
         return 0
     fi
     
-    # Create certbot directories
+    # Create certbot directories with full path for challenge files
     mkdir -p "${PROJECT_ROOT}/certbot/conf"
-    mkdir -p "${PROJECT_ROOT}/certbot/www"
+    mkdir -p "${PROJECT_ROOT}/certbot/www/.well-known/acme-challenge"
+    
+    # Ensure correct permissions
+    chmod -R 755 "${PROJECT_ROOT}/certbot"
     
     log_step "Starting Nginx for SSL certificate request..."
     docker compose -f provisioning/docker-compose.yml up -d nginx
     
-    # Wait for nginx to start
-    sleep 5
+    # Wait for nginx to start and reload its configuration
+    sleep 3
+    docker compose -f provisioning/docker-compose.yml exec nginx nginx -s reload 2>/dev/null || true
+    sleep 2
     
     log_step "Requesting SSL certificate for $DOMAIN..."
     
