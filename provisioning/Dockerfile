@@ -32,9 +32,9 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy requirements and install dependencies
-COPY requirements/production.txt /tmp/requirements.txt
+COPY requirements/ /tmp/requirements/
 RUN pip install --upgrade pip setuptools wheel && \
-    pip install -r /tmp/requirements.txt
+    pip install -r /tmp/requirements/production.txt
 
 # -----------------------------------------------------------------------------
 # Stage 2: Production Image
