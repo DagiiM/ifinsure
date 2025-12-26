@@ -390,6 +390,19 @@ EOF
     else
         log_info "Environment file already exists: $env_file"
         
+        # Always update security settings based on domain/SSL status
+        local ssl_redirect="False"
+        local cookie_secure="False"
+        if [[ -n "$DOMAIN" ]] && [[ "$ENABLE_SSL" == true ]]; then
+            ssl_redirect="True"
+            cookie_secure="True"
+        fi
+        
+        log_step "Updating security settings in environment file..."
+        sed -i "s/^SECURE_SSL_REDIRECT=.*/SECURE_SSL_REDIRECT=${ssl_redirect}/" "$env_file"
+        sed -i "s/^SESSION_COOKIE_SECURE=.*/SESSION_COOKIE_SECURE=${cookie_secure}/" "$env_file"
+        sed -i "s/^CSRF_COOKIE_SECURE=.*/CSRF_COOKIE_SECURE=${cookie_secure}/" "$env_file"
+        
         # Update domain-specific settings if domain is provided
         if [[ -n "$DOMAIN" ]]; then
             log_step "Updating domain settings in environment file..."
@@ -905,6 +918,11 @@ parse_arguments() {
         log_error "Email (-e/--email) is required when using SSL with a domain."
         log_info "Either provide an email or use --no-ssl to disable SSL."
         exit 1
+    fi
+    
+    # If no domain is provided, disable SSL
+    if [[ -z "$DOMAIN" ]]; then
+        ENABLE_SSL=false
     fi
 }
 
