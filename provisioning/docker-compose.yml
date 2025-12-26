@@ -24,6 +24,8 @@ services:
     image: postgres:16-alpine
     container_name: ifinsure_db
     restart: unless-stopped
+    env_file:
+      - ../.env.production
     environment:
       POSTGRES_DB: ${DB_NAME:-ifinsure_db}
       POSTGRES_USER: ${DB_USER:-ifinsure}
