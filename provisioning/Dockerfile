@@ -24,6 +24,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    libwebp-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -60,6 +63,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
+    libjpeg62-turbo \
+    zlib1g \
+    libwebp7 \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \

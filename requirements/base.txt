@@ -1,2 +1,3 @@
 # Core Django - minimal dependencies
 Django>=5.1,<6.0
+Pillow>=10.0,<11.0
