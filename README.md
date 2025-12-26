@@ -43,6 +43,12 @@ chmod +x provisioning/deploy.sh
 ./provisioning/deploy.sh --domain yourdomain.com --email admin@yourdomain.com
 ```
 
+### Fresh Re-installation (Full Reset)
+If you need to wipe existing data and start completely fresh:
+```bash
+./provisioning/deploy.sh --domain yourdomain.com --email admin@yourdomain.com --reset
+```
+
 This will automatically:
 - Check and install dependencies (Docker, etc.)
 - Set up a production-ready PostgreSQL & Redis environment
