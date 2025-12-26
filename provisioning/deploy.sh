@@ -673,7 +673,7 @@ setup_ssl() {
     log_step "Requesting SSL certificate for $DOMAIN..."
     
     # Request certificate using certbot
-    docker compose -f provisioning/docker-compose.yml run --rm certbot certonly \
+    docker compose -f provisioning/docker-compose.yml run --rm --entrypoint certbot certbot certonly \
         --webroot \
         --webroot-path=/var/www/certbot \
         --email "$EMAIL" \
