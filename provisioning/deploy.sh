@@ -330,9 +330,17 @@ EMAIL_HOST_PASSWORD=
 DEFAULT_FROM_EMAIL=noreply@${DOMAIN:-ifinsure.local}
 
 # Security Settings
-SECURE_SSL_REDIRECT=${ENABLE_SSL}
-SESSION_COOKIE_SECURE=${ENABLE_SSL}
-CSRF_COOKIE_SECURE=${ENABLE_SSL}
+# Security Settings
+# Only enable SSL redirect if a domain is set AND SSL is enabled
+if [[ -n "$DOMAIN" ]] && [[ "$ENABLE_SSL" == true ]]; then
+    SECURE_SSL_REDIRECT=True
+    SESSION_COOKIE_SECURE=True
+    CSRF_COOKIE_SECURE=True
+else
+    SECURE_SSL_REDIRECT=False
+    SESSION_COOKIE_SECURE=False
+    CSRF_COOKIE_SECURE=False
+fi
 
 # Logging
 LOG_LEVEL=INFO
@@ -790,7 +798,10 @@ print_summary() {
             app_url="http://$DOMAIN"
         fi
     else
-        app_url="http://localhost:${PORT:-8000}"
+    else
+        # Try to get public IP
+        local public_ip=$(curl -s https://api.ipify.org || echo "localhost")
+        app_url="http://${public_ip}:${PORT:-8000}"
     fi
     
     echo ""
