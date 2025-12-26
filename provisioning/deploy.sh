@@ -506,6 +506,30 @@ build_application() {
     log_success "Docker images built successfully"
 }
 
+fix_permissions() {
+    log_step "Fixing directory permissions..."
+    
+    if [[ "$DRY_RUN" == true ]]; then
+        log_info "[DRY-RUN] Would fix directory permissions"
+        return 0
+    fi
+
+    # Create directories if they don't exist
+    mkdir -p "${PROJECT_ROOT}/staticfiles" "${PROJECT_ROOT}/media" "${PROJECT_ROOT}/logs"
+    
+    # Ensure directories are owned by UID 1000 (appuser in Dockerfile)
+    # We use sudo to ensure we can change ownership if they were created by root
+    if command -v sudo >/dev/null 2>&1; then
+        sudo chown -R 1000:1000 "${PROJECT_ROOT}/staticfiles" "${PROJECT_ROOT}/media" "${PROJECT_ROOT}/logs" || true
+        sudo chmod -R 775 "${PROJECT_ROOT}/staticfiles" "${PROJECT_ROOT}/media" "${PROJECT_ROOT}/logs" || true
+    else
+        chown -R 1000:1000 "${PROJECT_ROOT}/staticfiles" "${PROJECT_ROOT}/media" "${PROJECT_ROOT}/logs" || true
+        chmod -R 775 "${PROJECT_ROOT}/staticfiles" "${PROJECT_ROOT}/media" "${PROJECT_ROOT}/logs" || true
+    fi
+    
+    log_success "Permissions fixed"
+}
+
 start_services() {
     log_header "Starting Services"
     
@@ -899,6 +923,7 @@ main() {
     # Docker deployment
     create_docker_network
     build_application
+    fix_permissions
     start_services
     run_migrations
     start_application
