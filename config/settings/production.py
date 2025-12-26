@@ -35,6 +35,19 @@ SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True').lower() == '
 SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
 CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'True').lower() == 'true'
 
+# CSRF Trusted Origins - required for Django 4.0+ behind a proxy
+# Build from environment or derive from ALLOWED_HOSTS
+_csrf_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+if _csrf_origins:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in _csrf_origins.split(',') if origin.strip()]
+else:
+    # Auto-generate from ALLOWED_HOSTS
+    CSRF_TRUSTED_ORIGINS = []
+    for host in ALLOWED_HOSTS:
+        if host and host != '*':
+            CSRF_TRUSTED_ORIGINS.append(f'http://{host}')
+            CSRF_TRUSTED_ORIGINS.append(f'https://{host}')
+
 # =============================================================================
 # Celery Configuration
 # =============================================================================

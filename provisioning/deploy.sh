@@ -453,6 +453,25 @@ setup_environment() {
             cookie_secure="True"
         fi
         
+        # Build CSRF_TRUSTED_ORIGINS (required for Django 4.0+)
+        local csrf_origins=""
+        if [[ -n "$DOMAIN" ]]; then
+            if [[ "$ENABLE_SSL" == true ]]; then
+                csrf_origins="https://$DOMAIN,https://www.$DOMAIN"
+            else
+                csrf_origins="http://$DOMAIN,http://www.$DOMAIN"
+            fi
+        fi
+        # Add public IP to CSRF origins
+        local public_ip=$(get_public_ip || echo "")
+        if [[ -n "$public_ip" ]]; then
+            if [[ -n "$csrf_origins" ]]; then
+                csrf_origins="$csrf_origins,http://$public_ip"
+            else
+                csrf_origins="http://$public_ip"
+            fi
+        fi
+        
         # Create environment file
         cat > "$env_file" << EOF
 # =============================================================================
@@ -496,6 +515,7 @@ DEFAULT_FROM_EMAIL=noreply@${DOMAIN:-ifinsure.local}
 SECURE_SSL_REDIRECT=${ssl_redirect}
 SESSION_COOKIE_SECURE=${cookie_secure}
 CSRF_COOKIE_SECURE=${cookie_secure}
+CSRF_TRUSTED_ORIGINS=${csrf_origins}
 
 # Logging
 LOG_LEVEL=INFO
