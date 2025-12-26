@@ -58,6 +58,7 @@ ENABLE_SSL=true
 SKIP_BACKUP=false
 SKIP_MIGRATIONS=false
 DRY_RUN=false
+RESET_ALL=false
 
 # Docker configuration
 COMPOSE_PROJECT_NAME="ifinsure"
@@ -123,6 +124,7 @@ Options:
     --skip-backup           Skip database backup before deployment
     --skip-migrations       Skip database migrations
     --dry-run               Show what would be done without executing
+    --reset                 Reset everything (delete all data and start fresh)
     -h, --help              Show this help message
 
 Examples:
@@ -436,6 +438,34 @@ backup_database() {
         log_error "Failed to create database backup"
         exit 1
     fi
+}
+
+reset_environment() {
+    if [[ "$RESET_ALL" != true ]]; then
+        return 0
+    fi
+
+    log_header "RESETTING EVERYTHING"
+    log_warning "This will delete all containers, images, and VOLUMES (database data!)"
+    
+    if [[ "$DRY_RUN" == true ]]; then
+        log_info "[DRY-RUN] Would reset environment"
+        return 0
+    fi
+
+    read -p "Are you absolutely sure you want to delete ALL data? (yes/no): " confirm
+    if [[ "$confirm" != "yes" ]]; then
+        log_info "Reset cancelled by user."
+        return 0
+    fi
+
+    log_step "Stopping and removing all services and volumes..."
+    docker compose -f provisioning/docker-compose.yml down -v --remove-orphans
+    
+    log_step "Cleaning up any dangling images..."
+    docker image prune -f
+    
+    log_success "Environment reset successfully"
 }
 
 # =============================================================================
@@ -803,6 +833,10 @@ parse_arguments() {
                 DRY_RUN=true
                 shift
                 ;;
+            --reset)
+                RESET_ALL=true
+                shift
+                ;;
             -h|--help)
                 show_help
                 exit 0
@@ -859,6 +893,7 @@ main() {
     
     # Setup environment and backup
     setup_environment
+    reset_environment
     backup_database
     
     # Docker deployment
