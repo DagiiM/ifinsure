@@ -891,6 +891,13 @@ setup_ssl() {
         return 0
     fi
     
+    # 1. CLEANUP: Remove any existing/stale SSL config to ensure Nginx starts clean
+    local ssl_conf="${SCRIPT_DIR}/nginx/conf.d/ssl.conf"
+    if [[ -f "$ssl_conf" ]]; then
+        log_info "Removing existing SSL config for clean setup..."
+        rm -f "$ssl_conf"
+    fi
+    
     # Create certbot directories with full path for challenge files
     mkdir -p "${PROJECT_ROOT}/certbot/conf"
     mkdir -p "${PROJECT_ROOT}/certbot/www/.well-known/acme-challenge"
@@ -899,12 +906,11 @@ setup_ssl() {
     chmod -R 755 "${PROJECT_ROOT}/certbot"
     
     log_step "Starting Nginx for SSL certificate request..."
-    dc_cmd up -d nginx
+    # Force recreate nginx to ensure it picks up fresh default.conf and no stale state
+    dc_cmd up -d --force-recreate nginx
     
-    # Wait for nginx to start and reload its configuration
-    sleep 3
-    dc_cmd exec nginx nginx -s reload 2>/dev/null || true
-    sleep 2
+    # Wait for nginx to start
+    sleep 5
     
     log_step "Requesting SSL certificate for $DOMAIN..."
     
@@ -968,6 +974,19 @@ setup_ssl() {
         fi
     else
         log_error "Failed to obtain SSL certificate (exit code: $ssl_result)"
+        
+        # CRITICAL FIX: Disable SSL redirect in environment file to prevent loops
+        if [[ -f "${PROJECT_ROOT}/.env.production" ]]; then
+            log_warning "Disabling SECURE_SSL_REDIRECT in .env.production to allow HTTP access..."
+            # Use sed to replace True with False for SSL redirect
+            # We use a temp file to avoid issues with sed in-place on some systems
+            sed 's/SECURE_SSL_REDIRECT=True/SECURE_SSL_REDIRECT=False/' "${PROJECT_ROOT}/.env.production" > "${PROJECT_ROOT}/.env.production.tmp" && mv "${PROJECT_ROOT}/.env.production.tmp" "${PROJECT_ROOT}/.env.production"
+            
+            # Restart app to pick up the change
+            log_info "Restarting application to apply security changes..."
+            dc_cmd restart app
+        fi
+        
         log_warning "Continuing without SSL. Check your domain DNS settings."
     fi
 }
