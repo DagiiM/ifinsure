@@ -53,12 +53,14 @@ readonly NC='\033[0m' # No Color
 DOMAIN=""
 EMAIL=""
 PORT=""
-BRANCH="main"
+BRANCH="main"  # NOTE: Branch switching not yet implemented; reserved for future use
 ENABLE_SSL=true
+ALLOW_INSTALL=false  # Set via --allow-install to permit automatic Docker/package installation
 SKIP_BACKUP=false
 SKIP_MIGRATIONS=false
 DRY_RUN=false
 RESET_ALL=false
+NON_INTERACTIVE=false
 
 # Docker configuration
 COMPOSE_PROJECT_NAME="ifinsure"
@@ -66,6 +68,15 @@ DB_CONTAINER_NAME="ifinsure_db"
 REDIS_CONTAINER_NAME="ifinsure_redis"
 APP_CONTAINER_NAME="ifinsure_app"
 NGINX_CONTAINER_NAME="ifinsure_nginx"
+
+# Determine Docker Compose command
+if docker compose version &>/dev/null; then
+    readonly DC="docker compose"
+elif command -v docker-compose &>/dev/null; then
+    readonly DC="docker-compose"
+else
+    readonly DC="docker compose" # Fallback, likely to fail if not installed
+fi
 
 # =============================================================================
 # LOGGING FUNCTIONS
@@ -94,6 +105,21 @@ log_header() {
 # =============================================================================
 # HELPER FUNCTIONS
 # =============================================================================
+
+# Get public IP with fallbacks
+get_public_ip() {
+    local ip=""
+    local services=("https://api.ipify.org" "https://ifconfig.me" "https://icanhazip.com")
+    
+    for service in "${services[@]}"; do
+        ip=$(curl -s --max-time 5 "$service" 2>/dev/null || true)
+        if [[ -n "$ip" ]]; then
+            echo "$ip"
+            return 0
+        fi
+    done
+    return 1
+}
 
 print_banner() {
     echo -e "${CYAN}"
@@ -125,6 +151,8 @@ Options:
     --skip-migrations       Skip database migrations
     --dry-run               Show what would be done without executing
     --reset                 Reset everything (delete all data and start fresh)
+    --allow-install         Allow automatic installation of Docker and dependencies
+    --non-interactive       Run without interactive prompts (for CI/CD)
     -h, --help              Show this help message
 
 Examples:
@@ -154,6 +182,50 @@ check_root() {
     fi
 }
 
+# =============================================================================
+# INPUT VALIDATION
+# =============================================================================
+
+validate_domain() {
+    local domain="$1"
+    # Allow empty (local deployment) or valid domain pattern
+    if [[ -z "$domain" ]]; then
+        return 0
+    fi
+    # Basic domain validation: alphanumeric, hyphens, dots; no leading/trailing dot/hyphen
+    if [[ ! "$domain" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$ ]]; then
+        log_error "Invalid domain format: $domain"
+        log_info "Domain must be a valid hostname (e.g., example.com or sub.example.com)"
+        return 1
+    fi
+    return 0
+}
+
+validate_email() {
+    local email="$1"
+    if [[ -z "$email" ]]; then
+        return 0
+    fi
+    # Basic email validation
+    if [[ ! "$email" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+        log_error "Invalid email format: $email"
+        return 1
+    fi
+    return 0
+}
+
+validate_port() {
+    local port="$1"
+    if [[ -z "$port" ]]; then
+        return 0
+    fi
+    if [[ ! "$port" =~ ^[0-9]+$ ]] || [[ "$port" -lt 1 ]] || [[ "$port" -gt 65535 ]]; then
+        log_error "Invalid port: $port (must be 1-65535)"
+        return 1
+    fi
+    return 0
+}
+
 check_os() {
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
@@ -174,8 +246,52 @@ check_command() {
     command -v "$1" &> /dev/null
 }
 
+# Cross-platform sed in-place edit (handles GNU and BSD sed)
+sed_inplace() {
+    local pattern="$1"
+    local file="$2"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "$pattern" "$file"
+    else
+        sed -i "$pattern" "$file"
+    fi
+}
+
+# Install packages using the appropriate package manager
+install_packages() {
+    local packages=("$@")
+    
+    if [[ ${#packages[@]} -eq 0 ]]; then
+        return 0
+    fi
+    
+    if [[ "$ALLOW_INSTALL" != true ]]; then
+        log_error "Missing packages: ${packages[*]}"
+        log_info "Run with --allow-install to permit automatic installation, or install manually:"
+        log_info "  sudo apt-get install -y ${packages[*]}  # Debian/Ubuntu"
+        log_info "  sudo dnf install -y ${packages[*]}      # Fedora/RHEL"
+        return 1
+    fi
+    
+    if check_command apt-get; then
+        sudo apt-get update
+        sudo apt-get install -y "${packages[@]}"
+    elif check_command dnf; then
+        sudo dnf install -y "${packages[@]}"
+    elif check_command yum; then
+        sudo yum install -y "${packages[@]}"
+    elif check_command pacman; then
+        sudo pacman -Sy --noconfirm "${packages[@]}"
+    elif check_command brew; then
+        brew install "${packages[@]}"
+    else
+        log_error "No supported package manager found (apt-get, dnf, yum, pacman, brew)"
+        return 1
+    fi
+}
+
 install_docker() {
-    log_step "Installing Docker..."
+    log_step "Checking Docker..."
     
     if check_command docker; then
         log_success "Docker is already installed: $(docker --version)"
@@ -186,19 +302,41 @@ install_docker() {
         log_info "[DRY-RUN] Would install Docker"
         return 0
     fi
+    
+    if [[ "$ALLOW_INSTALL" != true ]]; then
+        log_error "Docker is not installed."
+        log_info "Install Docker manually: https://docs.docker.com/engine/install/"
+        log_info "Or run with --allow-install to permit automatic installation."
+        return 1
+    fi
+    
+    log_warning "Installing Docker via get.docker.com script..."
 
-    # Install Docker using official script
-    curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
-    sudo sh /tmp/get-docker.sh
+    # Install Docker using official script with verification
+    local docker_script="/tmp/get-docker-$$.sh"
+    curl -fsSL https://get.docker.com -o "$docker_script"
+    
+    # Basic sanity check on downloaded script
+    if [[ ! -s "$docker_script" ]] || ! head -1 "$docker_script" | grep -q '^#!/'; then
+        log_error "Downloaded Docker install script appears invalid"
+        rm -f "$docker_script"
+        return 1
+    fi
+    
+    sudo sh "$docker_script"
+    rm -f "$docker_script"
     
     # Add current user to docker group
     sudo usermod -aG docker "$USER"
     
-    # Start and enable Docker
-    sudo systemctl start docker
-    sudo systemctl enable docker
+    # Start and enable Docker (systemd-based systems)
+    if check_command systemctl; then
+        sudo systemctl start docker
+        sudo systemctl enable docker
+    fi
     
     log_success "Docker installed successfully"
+    log_warning "You may need to log out and back in for docker group membership to take effect."
 }
 
 install_docker_compose() {
@@ -230,7 +368,12 @@ check_dependencies() {
     for cmd in curl git openssl envsubst; do
         if ! check_command "$cmd"; then
             if [[ "$cmd" == "envsubst" ]]; then
-                missing_deps+=("gettext-base")
+                # handling for different distros (gettext-base for debian/ubuntu, gettext for others)
+                if check_command apt-get; then
+                    missing_deps+=("gettext-base")
+                else
+                    missing_deps+=("gettext")
+                fi
             else
                 missing_deps+=("$cmd")
             fi
@@ -242,8 +385,7 @@ check_dependencies() {
         log_step "Installing missing dependencies..."
         
         if [[ "$DRY_RUN" == false ]]; then
-            sudo apt-get update
-            sudo apt-get install -y "${missing_deps[@]}"
+            install_packages "${missing_deps[@]}"
         fi
     fi
     
@@ -284,10 +426,17 @@ setup_environment() {
         local secret_key=$(generate_secret_key)
         local db_password=$(generate_db_password)
         
-        # Determine hosts
+        # Determine hosts - include public IP when no domain
         local allowed_hosts="localhost,127.0.0.1"
         if [[ -n "$DOMAIN" ]]; then
             allowed_hosts="$DOMAIN,www.$DOMAIN,$allowed_hosts"
+        else
+            # When no domain, add public IP to allowed hosts
+            local public_ip=$(get_public_ip || echo "")
+            if [[ -n "$public_ip" ]]; then
+                allowed_hosts="$public_ip,$allowed_hosts"
+                log_info "Added public IP ($public_ip) to ALLOWED_HOSTS"
+            fi
         fi
         
         # Determine security settings based on SSL
@@ -399,26 +548,43 @@ EOF
         fi
         
         log_step "Updating security settings in environment file..."
-        sed -i "s/^SECURE_SSL_REDIRECT=.*/SECURE_SSL_REDIRECT=${ssl_redirect}/" "$env_file"
-        sed -i "s/^SESSION_COOKIE_SECURE=.*/SESSION_COOKIE_SECURE=${cookie_secure}/" "$env_file"
-        sed -i "s/^CSRF_COOKIE_SECURE=.*/CSRF_COOKIE_SECURE=${cookie_secure}/" "$env_file"
+        sed_inplace "s/^SECURE_SSL_REDIRECT=.*/SECURE_SSL_REDIRECT=${ssl_redirect}/" "$env_file"
+        sed_inplace "s/^SESSION_COOKIE_SECURE=.*/SESSION_COOKIE_SECURE=${cookie_secure}/" "$env_file"
+        sed_inplace "s/^CSRF_COOKIE_SECURE=.*/CSRF_COOKIE_SECURE=${cookie_secure}/" "$env_file"
         
         # Update domain-specific settings if domain is provided
         if [[ -n "$DOMAIN" ]]; then
             log_step "Updating domain settings in environment file..."
-            sed -i "s/^DOMAIN=.*/DOMAIN=${DOMAIN}/" "$env_file"
-            sed -i "s/^ENABLE_SSL=.*/ENABLE_SSL=${ENABLE_SSL}/" "$env_file"
+            sed_inplace "s/^DOMAIN=.*/DOMAIN=${DOMAIN}/" "$env_file"
+            sed_inplace "s/^ENABLE_SSL=.*/ENABLE_SSL=${ENABLE_SSL}/" "$env_file"
             
             # Update ALLOWED_HOSTS
             local allowed_hosts="$DOMAIN,www.$DOMAIN,localhost,127.0.0.1"
-            sed -i "s/^DJANGO_ALLOWED_HOSTS=.*/DJANGO_ALLOWED_HOSTS=${allowed_hosts}/" "$env_file"
+            sed_inplace "s/^DJANGO_ALLOWED_HOSTS=.*/DJANGO_ALLOWED_HOSTS=${allowed_hosts}/" "$env_file"
+        else
+            # When no domain, add public IP to allowed hosts
+            local public_ip=$(get_public_ip || echo "")
+            if [[ -n "$public_ip" ]]; then
+                local allowed_hosts="$public_ip,localhost,127.0.0.1"
+                sed_inplace "s/^DJANGO_ALLOWED_HOSTS=.*/DJANGO_ALLOWED_HOSTS=${allowed_hosts}/" "$env_file"
+                log_info "Added public IP ($public_ip) to ALLOWED_HOSTS"
+            fi
         fi
     fi
     
-    # Source the environment file
-    set -a
-    source "$env_file"
-    set +a
+    # Load environment variables safely (no shell execution)
+    # Only export KEY=VALUE lines, skip comments and empty lines
+    log_step "Loading environment variables..."
+    while IFS='=' read -r key value; do
+        # Skip comments and empty lines
+        [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+        # Trim whitespace from key
+        key=$(echo "$key" | tr -d '[:space:]')
+        # Skip if key is empty or contains invalid characters
+        [[ -z "$key" || ! "$key" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] && continue
+        # Export the variable (value may contain = signs)
+        export "$key=$value"
+    done < "$env_file"
     
     log_success "Environment configured"
 }
@@ -478,14 +644,21 @@ reset_environment() {
         return 0
     fi
 
-    read -p "Are you absolutely sure you want to delete ALL data? (yes/no): " confirm
-    if [[ "$confirm" != "yes" ]]; then
-        log_info "Reset cancelled by user."
-        return 0
+    if [[ "$NON_INTERACTIVE" == true ]]; then
+        log_warning "Resetting environment in NON-INTERACTIVE mode."
+    else
+        read -p "Are you absolutely sure you want to delete ALL data? (yes/no): " confirm
+        if [[ "$confirm" != "yes" ]]; then
+            log_info "Reset cancelled by user."
+            return 0
+        fi
     fi
 
+    # CRITICAL: Change to PROJECT_ROOT for correct docker-compose context
+    cd "$PROJECT_ROOT"
+    
     log_step "Stopping and removing all services and volumes..."
-    docker compose -f provisioning/docker-compose.yml down -v --remove-orphans
+    ${DC} -f provisioning/docker-compose.yml down -v --remove-orphans
     
     log_step "Cleaning up any dangling images..."
     docker image prune -f
@@ -526,7 +699,7 @@ build_application() {
         return 0
     fi
     
-    docker compose -f provisioning/docker-compose.yml build --no-cache
+    ${DC} -f provisioning/docker-compose.yml build --no-cache
     
     log_success "Docker images built successfully"
 }
@@ -566,7 +739,7 @@ start_services() {
     fi
     
     log_step "Starting database and Redis..."
-    docker compose -f provisioning/docker-compose.yml up -d db redis
+    ${DC} -f provisioning/docker-compose.yml up -d db redis
     
     # Wait for database to be ready
     log_step "Waiting for database to be ready..."
@@ -618,10 +791,10 @@ run_migrations() {
     fi
     
     log_step "Running Django migrations..."
-    docker compose -f provisioning/docker-compose.yml run --rm app python manage.py migrate --noinput
+    ${DC} -f provisioning/docker-compose.yml run --rm app python manage.py migrate --noinput
     
     log_step "Collecting static files..."
-    docker compose -f provisioning/docker-compose.yml run --rm app python manage.py collectstatic --noinput
+    ${DC} -f provisioning/docker-compose.yml run --rm app python manage.py collectstatic --noinput
     
     log_success "Migrations completed"
 }
@@ -637,7 +810,7 @@ start_application() {
     cd "$PROJECT_ROOT"
     
     log_step "Starting application with Gunicorn..."
-    docker compose -f provisioning/docker-compose.yml up -d app
+    ${DC} -f provisioning/docker-compose.yml up -d app
     
     # Wait for application to be ready
     log_step "Waiting for application to be ready..."
@@ -646,12 +819,19 @@ start_application() {
     local app_port="${PORT:-8000}"
     
     while [[ $attempt -lt $max_attempts ]]; do
-        if docker exec "${APP_CONTAINER_NAME}" curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health/ 2>/dev/null | grep -q "200"; then
+        # Use Docker's built-in health check status (more reliable than curl inside container)
+        local health_status=$(docker inspect --format='{{.State.Health.Status}}' "${APP_CONTAINER_NAME}" 2>/dev/null || echo "unknown")
+        if [[ "$health_status" == "healthy" ]]; then
             log_success "Application is ready"
             break
         fi
+        # Fallback: check if container is running and listening (try curl first, then wget)
+        if docker exec "${APP_CONTAINER_NAME}" sh -c 'curl -sf http://localhost:8000/health/ >/dev/null 2>&1 || wget -q --spider http://localhost:8000/health/ 2>/dev/null' 2>/dev/null; then
+            log_success "Application is ready (http check)"
+            break
+        fi
         attempt=$((attempt + 1))
-        log_info "Waiting for application... (attempt $attempt/$max_attempts)"
+        log_info "Waiting for application... (attempt $attempt/$max_attempts, health: $health_status)"
         sleep 2
     done
     
@@ -693,17 +873,19 @@ setup_ssl() {
     chmod -R 755 "${PROJECT_ROOT}/certbot"
     
     log_step "Starting Nginx for SSL certificate request..."
-    docker compose -f provisioning/docker-compose.yml up -d nginx
+    ${DC} -f provisioning/docker-compose.yml up -d nginx
     
     # Wait for nginx to start and reload its configuration
     sleep 3
-    docker compose -f provisioning/docker-compose.yml exec nginx nginx -s reload 2>/dev/null || true
+    ${DC} -f provisioning/docker-compose.yml exec nginx nginx -s reload 2>/dev/null || true
     sleep 2
     
     log_step "Requesting SSL certificate for $DOMAIN..."
     
     # Request certificate using certbot
-    docker compose -f provisioning/docker-compose.yml run --rm --entrypoint certbot certbot certonly \
+    # Capture exit code to handle failure gracefully (set -e would otherwise exit)
+    local ssl_result=0
+    ${DC} -f provisioning/docker-compose.yml run --rm --entrypoint certbot certbot certonly \
         --webroot \
         --webroot-path=/var/www/certbot \
         --email "$EMAIL" \
@@ -711,26 +893,55 @@ setup_ssl() {
         --no-eff-email \
         --force-renewal \
         -d "$DOMAIN" \
-        -d "www.$DOMAIN"
+        -d "www.$DOMAIN" || ssl_result=$?
     
-    if [[ $? -eq 0 ]]; then
+    if [[ $ssl_result -eq 0 ]]; then
         log_success "SSL certificate obtained successfully"
         
-        # Generate ssl.conf from template with variable substitution
+        # Generate ssl.conf from template with atomic write and backup
         log_step "Generating SSL configuration for $DOMAIN..."
         export DOMAIN
-        envsubst '${DOMAIN}' < "${SCRIPT_DIR}/nginx/conf.d/ssl.conf.template" > "${SCRIPT_DIR}/nginx/conf.d/ssl.conf"
         
-        # Remove default.conf to avoid conflicts (ssl.conf handles both HTTP and HTTPS)
-        # Actually, keep default.conf as fallback for non-domain requests
+        local ssl_conf="${SCRIPT_DIR}/nginx/conf.d/ssl.conf"
+        local ssl_conf_tmp="${ssl_conf}.tmp.$$"
+        local ssl_conf_backup="${ssl_conf}.backup"
         
-        # Reload nginx with SSL configuration
-        log_step "Reloading Nginx with SSL configuration..."
-        docker compose -f provisioning/docker-compose.yml restart nginx
+        # Generate to temp file first (atomic write pattern)
+        if ! envsubst '${DOMAIN}' < "${SCRIPT_DIR}/nginx/conf.d/ssl.conf.template" > "$ssl_conf_tmp"; then
+            log_error "Failed to generate SSL configuration"
+            rm -f "$ssl_conf_tmp"
+            return 1
+        fi
         
-        log_success "SSL configured successfully for $DOMAIN"
+        # Backup existing config if present
+        if [[ -f "$ssl_conf" ]]; then
+            cp "$ssl_conf" "$ssl_conf_backup"
+            log_info "Backed up existing SSL config to $ssl_conf_backup"
+        fi
+        
+        # Move temp file to final location (atomic on same filesystem)
+        mv "$ssl_conf_tmp" "$ssl_conf"
+        
+        # Test nginx configuration before reloading
+        log_step "Testing Nginx configuration..."
+        if ${DC} -f provisioning/docker-compose.yml exec nginx nginx -t 2>&1; then
+            log_step "Reloading Nginx with SSL configuration..."
+            ${DC} -f provisioning/docker-compose.yml restart nginx
+            log_success "SSL configured successfully for $DOMAIN"
+            # Remove backup on success
+            rm -f "$ssl_conf_backup"
+        else
+            log_error "Nginx configuration test failed. Rolling back SSL config..."
+            if [[ -f "$ssl_conf_backup" ]]; then
+                mv "$ssl_conf_backup" "$ssl_conf"
+                log_warning "Restored previous SSL configuration."
+            else
+                rm -f "$ssl_conf"
+                log_warning "SSL configuration removed. Using HTTP only."
+            fi
+        fi
     else
-        log_error "Failed to obtain SSL certificate"
+        log_error "Failed to obtain SSL certificate (exit code: $ssl_result)"
         log_warning "Continuing without SSL. Check your domain DNS settings."
     fi
 }
@@ -747,20 +958,54 @@ setup_ssl_renewal() {
         return 0
     fi
     
-    # Create renewal script
-    cat > "${SCRIPT_DIR}/renew-ssl.sh" << 'EOF'
+    # Create renewal script with proper error handling and nginx config test
+    # Create renewal script with proper error handling and nginx config test
+    # We use unquoted heredoc (EOF) so ${DC} is expanded, but we must escape others
+    cat > "${SCRIPT_DIR}/renew-ssl.sh" << EOF
 #!/bin/bash
-cd "$(dirname "$0")/.."
-docker compose -f provisioning/docker-compose.yml run --rm certbot renew
-docker compose -f provisioning/docker-compose.yml exec nginx nginx -s reload
+set -e
+cd "\$(dirname "\$0")/.."
+echo "[\$(date)] Starting SSL renewal..."
+${DC} -f provisioning/docker-compose.yml run --rm certbot renew
+# Test nginx config before reloading
+if ${DC} -f provisioning/docker-compose.yml exec nginx nginx -t 2>&1; then
+    ${DC} -f provisioning/docker-compose.yml exec nginx nginx -s reload
+    echo "[\$(date)] SSL renewal completed successfully"
+else
+    echo "[\$(date)] ERROR: Nginx config test failed after renewal"
+    exit 1
+fi
 EOF
     
     chmod +x "${SCRIPT_DIR}/renew-ssl.sh"
     
     # Add cron job for automatic renewal (runs twice daily)
-    (crontab -l 2>/dev/null; echo "0 0,12 * * * ${SCRIPT_DIR}/renew-ssl.sh >> ${PROJECT_ROOT}/logs/ssl-renewal.log 2>&1") | crontab -
+    # Use a unique marker comment to identify our cron entry for safe idempotent updates
+    local cron_marker="# ifinsure-ssl-renewal"
+    local cron_entry="0 0,12 * * * ${SCRIPT_DIR}/renew-ssl.sh >> ${PROJECT_ROOT}/logs/ssl-renewal.log 2>&1 ${cron_marker}"
     
-    log_success "SSL renewal configured"
+    # Check if crontab command exists
+    if ! check_command crontab; then
+        log_warning "crontab not available. Please set up SSL renewal manually."
+        log_info "Add this to your cron: $cron_entry"
+        return 0
+    fi
+    
+    # Remove only our specific entry (identified by marker), then add the new one
+    local current_cron
+    current_cron=$(crontab -l 2>/dev/null || true)
+    
+    # Check if entry already exists with same path
+    if echo "$current_cron" | grep -qF "$cron_marker"; then
+        log_info "SSL renewal cron job already configured, updating..."
+        # Remove old entry with our marker
+        current_cron=$(echo "$current_cron" | grep -vF "$cron_marker")
+    fi
+    
+    # Add new entry
+    echo -e "${current_cron}\n${cron_entry}" | crontab -
+    
+    log_success "SSL renewal configured (cron job added)"
 }
 
 start_nginx() {
@@ -772,7 +1017,7 @@ start_nginx() {
     fi
     
     cd "$PROJECT_ROOT"
-    docker compose -f provisioning/docker-compose.yml up -d nginx
+    ${DC} -f provisioning/docker-compose.yml up -d nginx
     
     log_success "Nginx started"
 }
@@ -789,14 +1034,20 @@ create_superuser() {
         return 0
     fi
     
+    if [[ "$NON_INTERACTIVE" == true ]]; then
+        log_info "Skipping superuser creation (non-interactive mode)."
+        log_info "Create one later with: ${DC} -f provisioning/docker-compose.yml run --rm app python manage.py createsuperuser"
+        return 0
+    fi
+
     read -p "Would you like to create a superuser now? (y/n): " -n 1 -r
     echo
     
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        docker compose -f provisioning/docker-compose.yml run --rm app python manage.py createsuperuser
+        ${DC} -f provisioning/docker-compose.yml run --rm app python manage.py createsuperuser
     else
         log_info "Skipping superuser creation. Run later with:"
-        log_info "  docker compose -f provisioning/docker-compose.yml run --rm app python manage.py createsuperuser"
+        log_info "  ${DC} -f provisioning/docker-compose.yml run --rm app python manage.py createsuperuser"
     fi
 }
 
@@ -811,8 +1062,8 @@ print_summary() {
             app_url="http://$DOMAIN"
         fi
     else
-        # Try to get public IP
-        local public_ip=$(curl -s https://api.ipify.org || echo "localhost")
+        # Try to get public IP with timeout to avoid hanging
+        local public_ip=$(get_public_ip || echo "localhost")
         app_url="http://${public_ip}:${PORT:-8000}"
     fi
     
@@ -833,10 +1084,10 @@ print_summary() {
     echo -e "${GREEN}╠═══════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${GREEN}║${NC}  ${YELLOW}Useful Commands:${NC}                                            ${GREEN}║${NC}"
     echo -e "${GREEN}║${NC}                                                               ${GREEN}║${NC}"
-    echo -e "${GREEN}║${NC}  View logs:        docker compose -f provisioning/docker-compose.yml logs -f${NC}"
-    echo -e "${GREEN}║${NC}  Stop:             docker compose -f provisioning/docker-compose.yml down${NC}"
-    echo -e "${GREEN}║${NC}  Restart:          docker compose -f provisioning/docker-compose.yml restart${NC}"
-    echo -e "${GREEN}║${NC}  Shell:            docker compose -f provisioning/docker-compose.yml exec app bash${NC}"
+    echo -e "${GREEN}║${NC}  View logs:        ${DC} -f provisioning/docker-compose.yml logs -f${NC}"
+    echo -e "${GREEN}║${NC}  Stop:             ${DC} -f provisioning/docker-compose.yml down${NC}"
+    echo -e "${GREEN}║${NC}  Restart:          ${DC} -f provisioning/docker-compose.yml restart${NC}"
+    echo -e "${GREEN}║${NC}  Shell:            ${DC} -f provisioning/docker-compose.yml exec app bash${NC}"
     echo -e "${GREEN}║${NC}                                                               ${GREEN}║${NC}"
     echo -e "${GREEN}╚═══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
@@ -848,14 +1099,37 @@ print_summary() {
 # CLEANUP
 # =============================================================================
 
+# Track temp files for cleanup
+TEMP_FILES=()
+
+register_temp_file() {
+    TEMP_FILES+=("$1")
+}
+
+cleanup_temp_files() {
+    for f in "${TEMP_FILES[@]}"; do
+        rm -f "$f" 2>/dev/null || true
+    done
+}
+
 cleanup_on_error() {
-    log_error "Deployment failed! Cleaning up..."
+    local exit_code=$?
+    log_error "Deployment failed! (exit code: $exit_code)"
+    
+    # Clean up any temp files we created
+    cleanup_temp_files
     
     # Don't remove containers on error - leave for debugging
     log_info "Containers left running for debugging."
-    log_info "To manually clean up: docker compose -f provisioning/docker-compose.yml down"
+    log_info "To manually clean up: ${DC} -f provisioning/docker-compose.yml down"
+    log_info "Check logs: ${DC} -f provisioning/docker-compose.yml logs --tail 50"
     
     exit 1
+}
+
+cleanup_on_exit() {
+    # Always clean up temp files on exit
+    cleanup_temp_files
 }
 
 # =============================================================================
@@ -901,6 +1175,14 @@ parse_arguments() {
                 RESET_ALL=true
                 shift
                 ;;
+            --allow-install)
+                ALLOW_INSTALL=true
+                shift
+                ;;
+            --non-interactive)
+                NON_INTERACTIVE=true
+                shift
+                ;;
             -h|--help)
                 show_help
                 exit 0
@@ -914,6 +1196,16 @@ parse_arguments() {
     done
     
     # Validate arguments
+    if ! validate_domain "$DOMAIN"; then
+        exit 1
+    fi
+    if ! validate_email "$EMAIL"; then
+        exit 1
+    fi
+    if ! validate_port "$PORT"; then
+        exit 1
+    fi
+    
     if [[ -n "$DOMAIN" ]] && [[ "$ENABLE_SSL" == true ]] && [[ -z "$EMAIL" ]]; then
         log_error "Email (-e/--email) is required when using SSL with a domain."
         log_info "Either provide an email or use --no-ssl to disable SSL."
@@ -934,8 +1226,9 @@ main() {
     # Create log directory
     mkdir -p "$(dirname "$LOG_FILE")"
     
-    # Set up error handling
+    # Set up error and exit handling
     trap cleanup_on_error ERR
+    trap cleanup_on_exit EXIT
     
     # Parse command line arguments
     parse_arguments "$@"
@@ -948,8 +1241,9 @@ main() {
     log_info "  Domain:          ${DOMAIN:-<none>}"
     log_info "  SSL:             ${ENABLE_SSL}"
     log_info "  Port:            ${PORT:-auto}"
-    log_info "  Branch:          ${BRANCH}"
+    log_info "  Branch:          ${BRANCH} (not yet implemented)"
     log_info "  Dry Run:         ${DRY_RUN}"
+    log_info "  Allow Install:   ${ALLOW_INSTALL}"
     
     if [[ "$DRY_RUN" == true ]]; then
         log_warning "Running in DRY-RUN mode - no changes will be made"
