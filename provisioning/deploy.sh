@@ -432,17 +432,18 @@ setup_environment() {
         local secret_key=$(generate_secret_key)
         local db_password=$(generate_db_password)
         
-        # Determine hosts - include public IP when no domain
+        # Get public IP (used for both ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS)
+        local public_ip=$(get_public_ip || echo "")
+        
+        # Determine hosts - always include public IP for server access
         local allowed_hosts="localhost,127.0.0.1"
         if [[ -n "$DOMAIN" ]]; then
             allowed_hosts="$DOMAIN,www.$DOMAIN,$allowed_hosts"
-        else
-            # When no domain, add public IP to allowed hosts
-            local public_ip=$(get_public_ip || echo "")
-            if [[ -n "$public_ip" ]]; then
-                allowed_hosts="$public_ip,$allowed_hosts"
-                log_info "Added public IP ($public_ip) to ALLOWED_HOSTS"
-            fi
+        fi
+        # Always add public IP to allowed hosts
+        if [[ -n "$public_ip" ]]; then
+            allowed_hosts="$public_ip,$allowed_hosts"
+            log_info "Added public IP ($public_ip) to ALLOWED_HOSTS"
         fi
         
         # Determine security settings based on SSL
@@ -457,13 +458,12 @@ setup_environment() {
         local csrf_origins=""
         if [[ -n "$DOMAIN" ]]; then
             if [[ "$ENABLE_SSL" == true ]]; then
-                csrf_origins="https://$DOMAIN,https://www.$DOMAIN"
+                csrf_origins="https://$DOMAIN,https://www.$DOMAIN,http://$DOMAIN,http://www.$DOMAIN"
             else
                 csrf_origins="http://$DOMAIN,http://www.$DOMAIN"
             fi
         fi
-        # Add public IP to CSRF origins
-        local public_ip=$(get_public_ip || echo "")
+        # Always add public IP to CSRF origins
         if [[ -n "$public_ip" ]]; then
             if [[ -n "$csrf_origins" ]]; then
                 csrf_origins="$csrf_origins,http://$public_ip"
