@@ -227,9 +227,13 @@ check_dependencies() {
     local missing_deps=()
     
     # Check for required commands
-    for cmd in curl git openssl; do
+    for cmd in curl git openssl envsubst; do
         if ! check_command "$cmd"; then
-            missing_deps+=("$cmd")
+            if [[ "$cmd" == "envsubst" ]]; then
+                missing_deps+=("gettext-base")
+            else
+                missing_deps+=("$cmd")
+            fi
         fi
     done
     
@@ -690,6 +694,14 @@ setup_ssl() {
     
     if [[ $? -eq 0 ]]; then
         log_success "SSL certificate obtained successfully"
+        
+        # Generate ssl.conf from template with variable substitution
+        log_step "Generating SSL configuration for $DOMAIN..."
+        export DOMAIN
+        envsubst '${DOMAIN}' < "${SCRIPT_DIR}/nginx/conf.d/ssl.conf.template" > "${SCRIPT_DIR}/nginx/conf.d/ssl.conf"
+        
+        # Remove default.conf to avoid conflicts (ssl.conf handles both HTTP and HTTPS)
+        # Actually, keep default.conf as fallback for non-domain requests
         
         # Reload nginx with SSL configuration
         log_step "Reloading Nginx with SSL configuration..."
