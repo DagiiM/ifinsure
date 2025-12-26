@@ -7,7 +7,7 @@ server {
     server_name ${DOMAIN} www.${DOMAIN};
 
     location ^~ /.well-known/acme-challenge/ {
-        alias /var/www/certbot/.well-known/acme-challenge/;
+        root /var/www/certbot;
         default_type "text/plain";
         try_files $uri =404;
     }
@@ -83,7 +83,8 @@ server {
         proxy_read_timeout 60s;
     }
 
-    location ~ /\. {
+    # Deny access to dotfiles except .well-known (needed for ACME)
+    location ~ /\.(?!well-known) {
         deny all;
     }
 }
