@@ -15,12 +15,20 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+        migrations.RemoveField(
+            model_name='policyapplication',
+            name='product',
+        ),
+        migrations.AddField(
             model_name='policyapplication',
             name='product',
             field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='applications', to='crm.insuranceproduct'),
         ),
-        migrations.AlterField(
+        migrations.RemoveField(
+            model_name='policy',
+            name='product',
+        ),
+        migrations.AddField(
             model_name='policy',
             name='product',
             field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='policies', to='crm.insuranceproduct'),
