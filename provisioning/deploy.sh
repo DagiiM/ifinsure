@@ -78,6 +78,12 @@ else
     readonly DC="docker compose" # Fallback, likely to fail if not installed
 fi
 
+# Docker Compose command with env file and compose file
+# This is set as a function to allow late evaluation of PROJECT_ROOT
+dc_cmd() {
+    ${DC} --env-file "${PROJECT_ROOT}/.env.production" -f "${PROJECT_ROOT}/provisioning/docker-compose.yml" "$@"
+}
+
 # =============================================================================
 # LOGGING FUNCTIONS
 # =============================================================================
@@ -658,7 +664,7 @@ reset_environment() {
     cd "$PROJECT_ROOT"
     
     log_step "Stopping and removing all services and volumes..."
-    ${DC} -f provisioning/docker-compose.yml down -v --remove-orphans
+    dc_cmd down -v --remove-orphans
     
     log_step "Cleaning up any dangling images..."
     docker image prune -f
@@ -699,7 +705,7 @@ build_application() {
         return 0
     fi
     
-    ${DC} -f provisioning/docker-compose.yml build --no-cache
+    dc_cmd build --no-cache
     
     log_success "Docker images built successfully"
 }
@@ -739,7 +745,7 @@ start_services() {
     fi
     
     log_step "Starting database and Redis..."
-    ${DC} -f provisioning/docker-compose.yml up -d db redis
+    dc_cmd up -d db redis
     
     # Wait for database to be ready
     log_step "Waiting for database to be ready..."
@@ -791,10 +797,10 @@ run_migrations() {
     fi
     
     log_step "Running Django migrations..."
-    ${DC} -f provisioning/docker-compose.yml run --rm app python manage.py migrate --noinput
+    dc_cmd run --rm app python manage.py migrate --noinput
     
     log_step "Collecting static files..."
-    ${DC} -f provisioning/docker-compose.yml run --rm app python manage.py collectstatic --noinput
+    dc_cmd run --rm app python manage.py collectstatic --noinput
     
     log_success "Migrations completed"
 }
@@ -810,7 +816,7 @@ start_application() {
     cd "$PROJECT_ROOT"
     
     log_step "Starting application with Gunicorn..."
-    ${DC} -f provisioning/docker-compose.yml up -d app
+    dc_cmd up -d app
     
     # Wait for application to be ready
     log_step "Waiting for application to be ready..."
@@ -873,11 +879,11 @@ setup_ssl() {
     chmod -R 755 "${PROJECT_ROOT}/certbot"
     
     log_step "Starting Nginx for SSL certificate request..."
-    ${DC} -f provisioning/docker-compose.yml up -d nginx
+    dc_cmd up -d nginx
     
     # Wait for nginx to start and reload its configuration
     sleep 3
-    ${DC} -f provisioning/docker-compose.yml exec nginx nginx -s reload 2>/dev/null || true
+    dc_cmd exec nginx nginx -s reload 2>/dev/null || true
     sleep 2
     
     log_step "Requesting SSL certificate for $DOMAIN..."
@@ -885,7 +891,7 @@ setup_ssl() {
     # Request certificate using certbot
     # Capture exit code to handle failure gracefully (set -e would otherwise exit)
     local ssl_result=0
-    ${DC} -f provisioning/docker-compose.yml run --rm --entrypoint certbot certbot certonly \
+    dc_cmd run --rm --entrypoint certbot certbot certonly \
         --webroot \
         --webroot-path=/var/www/certbot \
         --email "$EMAIL" \
@@ -924,9 +930,9 @@ setup_ssl() {
         
         # Test nginx configuration before reloading
         log_step "Testing Nginx configuration..."
-        if ${DC} -f provisioning/docker-compose.yml exec nginx nginx -t 2>&1; then
+        if dc_cmd exec nginx nginx -t 2>&1; then
             log_step "Reloading Nginx with SSL configuration..."
-            ${DC} -f provisioning/docker-compose.yml restart nginx
+            dc_cmd restart nginx
             log_success "SSL configured successfully for $DOMAIN"
             # Remove backup on success
             rm -f "$ssl_conf_backup"
@@ -966,10 +972,10 @@ setup_ssl_renewal() {
 set -e
 cd "\$(dirname "\$0")/.."
 echo "[\$(date)] Starting SSL renewal..."
-${DC} -f provisioning/docker-compose.yml run --rm certbot renew
+${DC} --env-file .env.production -f provisioning/docker-compose.yml run --rm certbot renew
 # Test nginx config before reloading
-if ${DC} -f provisioning/docker-compose.yml exec nginx nginx -t 2>&1; then
-    ${DC} -f provisioning/docker-compose.yml exec nginx nginx -s reload
+if ${DC} --env-file .env.production -f provisioning/docker-compose.yml exec nginx nginx -t 2>&1; then
+    ${DC} --env-file .env.production -f provisioning/docker-compose.yml exec nginx nginx -s reload
     echo "[\$(date)] SSL renewal completed successfully"
 else
     echo "[\$(date)] ERROR: Nginx config test failed after renewal"
@@ -1017,7 +1023,7 @@ start_nginx() {
     fi
     
     cd "$PROJECT_ROOT"
-    ${DC} -f provisioning/docker-compose.yml up -d nginx
+    dc_cmd up -d nginx
     
     log_success "Nginx started"
 }
@@ -1036,7 +1042,7 @@ create_superuser() {
     
     if [[ "$NON_INTERACTIVE" == true ]]; then
         log_info "Skipping superuser creation (non-interactive mode)."
-        log_info "Create one later with: ${DC} -f provisioning/docker-compose.yml run --rm app python manage.py createsuperuser"
+        log_info "Create one later with: ${DC} --env-file .env.production -f provisioning/docker-compose.yml run --rm app python manage.py createsuperuser"
         return 0
     fi
 
@@ -1044,10 +1050,10 @@ create_superuser() {
     echo
     
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        ${DC} -f provisioning/docker-compose.yml run --rm app python manage.py createsuperuser
+        dc_cmd run --rm app python manage.py createsuperuser
     else
         log_info "Skipping superuser creation. Run later with:"
-        log_info "  ${DC} -f provisioning/docker-compose.yml run --rm app python manage.py createsuperuser"
+        log_info "  ${DC} --env-file .env.production -f provisioning/docker-compose.yml run --rm app python manage.py createsuperuser"
     fi
 }
 
@@ -1084,10 +1090,10 @@ print_summary() {
     echo -e "${GREEN}╠═══════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${GREEN}║${NC}  ${YELLOW}Useful Commands:${NC}                                            ${GREEN}║${NC}"
     echo -e "${GREEN}║${NC}                                                               ${GREEN}║${NC}"
-    echo -e "${GREEN}║${NC}  View logs:        ${DC} -f provisioning/docker-compose.yml logs -f${NC}"
-    echo -e "${GREEN}║${NC}  Stop:             ${DC} -f provisioning/docker-compose.yml down${NC}"
-    echo -e "${GREEN}║${NC}  Restart:          ${DC} -f provisioning/docker-compose.yml restart${NC}"
-    echo -e "${GREEN}║${NC}  Shell:            ${DC} -f provisioning/docker-compose.yml exec app bash${NC}"
+    echo -e "${GREEN}║${NC}  View logs:        ${DC} --env-file .env.production -f provisioning/docker-compose.yml logs -f${NC}"
+    echo -e "${GREEN}║${NC}  Stop:             ${DC} --env-file .env.production -f provisioning/docker-compose.yml down${NC}"
+    echo -e "${GREEN}║${NC}  Restart:          ${DC} --env-file .env.production -f provisioning/docker-compose.yml restart${NC}"
+    echo -e "${GREEN}║${NC}  Shell:            ${DC} --env-file .env.production -f provisioning/docker-compose.yml exec app bash${NC}"
     echo -e "${GREEN}║${NC}                                                               ${GREEN}║${NC}"
     echo -e "${GREEN}╚═══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
@@ -1121,8 +1127,8 @@ cleanup_on_error() {
     
     # Don't remove containers on error - leave for debugging
     log_info "Containers left running for debugging."
-    log_info "To manually clean up: ${DC} -f provisioning/docker-compose.yml down"
-    log_info "Check logs: ${DC} -f provisioning/docker-compose.yml logs --tail 50"
+    log_info "To manually clean up: ${DC} --env-file .env.production -f provisioning/docker-compose.yml down"
+    log_info "Check logs: ${DC} --env-file .env.production -f provisioning/docker-compose.yml logs --tail 50"
     
     exit 1
 }
