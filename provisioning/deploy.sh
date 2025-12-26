@@ -598,6 +598,33 @@ EOF
         fi
     fi
     
+    # Safety Check: Ensure CSRF_TRUSTED_ORIGINS exists and isn't empty if we have info
+    # This handles cases where file exists but lacks the variable (from older versions)
+    if ! grep -q "^CSRF_TRUSTED_ORIGINS=" "$env_file"; then
+        log_info "Patching environment file with CSRF_TRUSTED_ORIGINS..."
+        # Re-calculate origins if we didn't just generate them
+        local csrf_origins=""
+        local p_ip=$(get_public_ip || echo "")
+        local d_name=$(grep "^DOMAIN=" "$env_file" | cut -d= -f2 | tr -d '"' | tr -d "'")
+        local ssl_en=$(grep "^ENABLE_SSL=" "$env_file" | cut -d= -f2 | tr -d '"' | tr -d "'")
+        
+        if [[ -n "$d_name" ]]; then
+            if [[ "$ssl_en" == "true" ]]; then
+                csrf_origins="https://$d_name,https://www.$d_name,http://$d_name,http://www.$d_name"
+            else
+                csrf_origins="http://$d_name,http://www.$d_name"
+            fi
+        fi
+        if [[ -n "$p_ip" ]]; then
+            if [[ -n "$csrf_origins" ]]; then
+                csrf_origins="$csrf_origins,http://$p_ip"
+            else
+                csrf_origins="http://$p_ip"
+            fi
+        fi
+        echo "CSRF_TRUSTED_ORIGINS=${csrf_origins}" >> "$env_file"
+    fi
+     
     # Load environment variables safely (no shell execution)
     # Only export KEY=VALUE lines, skip comments and empty lines
     log_step "Loading environment variables..."
