@@ -290,6 +290,14 @@ setup_environment() {
             allowed_hosts="$DOMAIN,www.$DOMAIN,$allowed_hosts"
         fi
         
+        # Determine security settings based on SSL
+        local ssl_redirect="False"
+        local cookie_secure="False"
+        if [[ -n "$DOMAIN" ]] && [[ "$ENABLE_SSL" == true ]]; then
+            ssl_redirect="True"
+            cookie_secure="True"
+        fi
+        
         # Create environment file
         cat > "$env_file" << EOF
 # =============================================================================
@@ -330,17 +338,9 @@ EMAIL_HOST_PASSWORD=
 DEFAULT_FROM_EMAIL=noreply@${DOMAIN:-ifinsure.local}
 
 # Security Settings
-# Security Settings
-# Only enable SSL redirect if a domain is set AND SSL is enabled
-if [[ -n "$DOMAIN" ]] && [[ "$ENABLE_SSL" == true ]]; then
-    SECURE_SSL_REDIRECT=True
-    SESSION_COOKIE_SECURE=True
-    CSRF_COOKIE_SECURE=True
-else
-    SECURE_SSL_REDIRECT=False
-    SESSION_COOKIE_SECURE=False
-    CSRF_COOKIE_SECURE=False
-fi
+SECURE_SSL_REDIRECT=${ssl_redirect}
+SESSION_COOKIE_SECURE=${cookie_secure}
+CSRF_COOKIE_SECURE=${cookie_secure}
 
 # Logging
 LOG_LEVEL=INFO
@@ -797,7 +797,6 @@ print_summary() {
         else
             app_url="http://$DOMAIN"
         fi
-    else
     else
         # Try to get public IP
         local public_ip=$(curl -s https://api.ipify.org || echo "localhost")
