@@ -1,0 +1,279 @@
+<!-- Search Modal Partial -->
+<div class="search-modal" id="searchModal">
+    <div class="modal-backdrop" onclick="closeSearchModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="search-input-wrapper">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="M21 21l-4.35-4.35"></path>
+                </svg>
+                <input 
+                    type="search" 
+                    id="modalSearchInput"
+                    placeholder="Search..." 
+                    autocomplete="off"
+                    autofocus
+                >
+                <kbd class="shortcut-hint">ESC</kbd>
+            </div>
+        </div>
+        
+        <div class="modal-body" id="searchResults">
+            <!-- Results loaded dynamically -->
+            <div class="search-empty">
+                <p>Start typing to search...</p>
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <div class="search-tips">
+                <span><kbd>↑</kbd><kbd>↓</kbd> to navigate</span>
+                <span><kbd>↵</kbd> to select</span>
+                <span><kbd>ESC</kbd> to close</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.search-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-modal);
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 15vh;
+}
+
+.search-modal.active {
+    display: flex;
+}
+
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    background: var(--color-white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: var(--spacing-4);
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.modal-header .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.modal-header .search-icon {
+    color: var(--color-gray-400);
+    flex-shrink: 0;
+}
+
+.modal-header input {
+    flex: 1;
+    border: none;
+    font-size: var(--font-size-lg);
+    color: var(--color-gray-900);
+    background: transparent;
+    outline: none;
+}
+
+.modal-header input::placeholder {
+    color: var(--color-gray-400);
+}
+
+.shortcut-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-1) var(--spacing-2);
+    font-size: var(--font-size-xs);
+    font-family: var(--font-family);
+    color: var(--color-gray-500);
+    background: var(--color-gray-100);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+}
+
+.modal-body {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.search-empty {
+    padding: var(--spacing-8);
+    text-align: center;
+    color: var(--color-gray-500);
+}
+
+.modal-footer {
+    padding: var(--spacing-3) var(--spacing-4);
+    border-top: 1px solid var(--color-gray-200);
+    background: var(--color-gray-50);
+}
+
+.search-tips {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-4);
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+}
+
+.search-tips kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 var(--spacing-1);
+    font-size: var(--font-size-xs);
+    font-family: var(--font-family);
+    color: var(--color-gray-600);
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--radius-sm);
+    margin: 0 2px;
+}
+
+/* Result items in modal */
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3) var(--spacing-4);
+    cursor: pointer;
+    transition: background var(--transition-base);
+}
+
+.search-result-item:hover,
+.search-result-item.selected {
+    background: var(--color-primary-50);
+}
+
+.search-result-item .result-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--color-gray-100);
+    border-radius: var(--radius-md);
+    color: var(--color-gray-500);
+}
+
+.search-result-item .result-info {
+    flex: 1;
+}
+
+.search-result-item .result-title {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-gray-900);
+}
+
+.search-result-item .result-type {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+}
+</style>
+
+<script>
+// Search modal functionality
+let selectedIndex = -1;
+let searchTimeout = null;
+
+function openSearchModal() {
+    document.getElementById('searchModal').classList.add('active');
+    document.getElementById('modalSearchInput').focus();
+}
+
+function closeSearchModal() {
+    document.getElementById('searchModal').classList.remove('active');
+    document.getElementById('modalSearchInput').value = '';
+    document.getElementById('searchResults').innerHTML = '<div class="search-empty"><p>Start typing to search...</p></div>';
+}
+
+// Keyboard shortcut to open
+document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        openSearchModal();
+    }
+    
+    if (e.key === 'Escape') {
+        closeSearchModal();
+    }
+});
+
+// Search input handler
+document.getElementById('modalSearchInput')?.addEventListener('input', function(e) {
+    const query = e.target.value;
+    
+    clearTimeout(searchTimeout);
+    
+    if (query.length < 2) {
+        document.getElementById('searchResults').innerHTML = '<div class="search-empty"><p>Start typing to search...</p></div>';
+        return;
+    }
+    
+    // Debounce search
+    searchTimeout = setTimeout(function() {
+        performSearch(query);
+    }, 200);
+});
+
+function performSearch(query) {
+    fetch(`/search/api/?q=${encodeURIComponent(query)}`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.data.all.length > 0) {
+            renderResults(data.data.all);
+        } else {
+            document.getElementById('searchResults').innerHTML = '<div class="search-empty"><p>No results found</p></div>';
+        }
+    });
+}
+
+function renderResults(results) {
+    const container = document.getElementById('searchResults');
+    container.innerHTML = results.map((item, index) => `
+        <div class="search-result-item" data-index="${index}" onclick="window.location='${item.url || '#'}'">
+            <div class="result-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                </svg>
+            </div>
+            <div class="result-info">
+                <div class="result-title">${item.title}</div>
+                <div class="result-type">${item.model_verbose_name || item.model}</div>
+            </div>
+        </div>
+    `).join('');
+}
+</script>

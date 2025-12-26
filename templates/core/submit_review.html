@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Submit a Review - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1>Share Your Experience</h1>
+        <p class="text-muted">Help other businesses discover the benefits of ifinsure</p>
+    </div>
+</div>
+
+<div class="content-wrapper">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Write a Review</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="id_rating" class="form-label">How would you rate ifinsure?</label>
+                            <div class="star-rating-input">
+                                {{ form.rating }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="id_quote" class="form-label">{{ form.quote.label }}</label>
+                            {{ form.quote }}
+                            <small class="form-text text-muted">Share your experience with our insurance services</small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label for="id_display_name" class="form-label">{{ form.display_name.label }}</label>
+                                {{ form.display_name }}
+                                <small class="form-text text-muted">Leave blank to use your account name</small>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label for="id_display_title" class="form-label">{{ form.display_title.label }}</label>
+                                {{ form.display_title }}
+                                <small class="form-text text-muted">e.g., "CEO, TechCorp"</small>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                            Your review will be published after moderation. We typically review within 24 hours.
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            Submit Review
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            {% if user_reviews %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Your Previous Reviews</h3>
+                </div>
+                <div class="card-body">
+                    {% for review in user_reviews %}
+                    <div class="review-item mb-3 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge badge-{{ review.status }}">{{ review.get_status_display }}</span>
+                            <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                        </div>
+                        <p class="mb-1">"{{ review.quote|truncatechars:100 }}"</p>
+                        <div class="star-display">
+                            {% for i in "12345" %}
+                            {% if forloop.counter <= review.rating %}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #fbbf24;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <a href="{% url 'core:my_reviews' %}" class="btn btn-outline btn-sm">View All Reviews</a>
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-muted mb-3"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <p class="text-muted mb-0">This will be your first review!</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h4 class="mb-3">Why Leave a Review?</h4>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-success" style="margin-right: 8px;"><path d="M20 6L9 17l-5-5"/></svg>
+                            Help other businesses find the right coverage
+                        </li>
+                        <li class="mb-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-success" style="margin-right: 8px;"><path d="M20 6L9 17l-5-5"/></svg>
+                            Share your experience with our team
+                        </li>
+                        <li class="mb-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-success" style="margin-right: 8px;"><path d="M20 6L9 17l-5-5"/></svg>
+                            Be featured on our homepage
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .badge-pending { background: var(--color-warning-light); color: var(--color-warning); }
+    .badge-approved { background: var(--color-success-light); color: var(--color-success); }
+    .badge-rejected { background: var(--color-danger-light); color: var(--color-danger); }
+</style>
+{% endblock %}

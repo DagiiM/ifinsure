@@ -1,0 +1,678 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ claim.claim_number }} - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'claims:list' %}">Claims</a>
+            <span>›</span>
+            <span>{{ claim.claim_number }}</span>
+        </nav>
+        <div class="header-row">
+            <div>
+                <h1 class="page-title">{{ claim.claim_number }}</h1>
+                <p class="page-subtitle">{{ claim.policy.product.name }}</p>
+            </div>
+            <div class="claim-status-badge status-{{ claim.status }}">
+                {% if claim.status == 'approved' or claim.status == 'paid' %}
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {% elif claim.status == 'rejected' %}
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {% else %}
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {% endif %}
+                {{ claim.get_status_display }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="claim-detail-layout">
+    <!-- Main Content -->
+    <div class="claim-main">
+        <!-- Claim Info Card -->
+        <div class="detail-card">
+            <div class="card-section-header">
+                <h3>Claim Information</h3>
+            </div>
+            <div class="claim-info-grid">
+                <div class="info-item">
+                    <span class="info-label">Claim Number</span>
+                    <span class="info-value">{{ claim.claim_number }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Policy</span>
+                    <span class="info-value">
+                        <a href="{% url 'policies:detail' claim.policy.pk %}" class="policy-link">{{ claim.policy.policy_number }}</a>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Incident Date</span>
+                    <span class="info-value">{{ claim.incident_date|date:"F d, Y" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Location</span>
+                    <span class="info-value">{{ claim.incident_location|default:"Not specified" }}</span>
+                </div>
+                <div class="info-item highlight">
+                    <span class="info-label">Claimed Amount</span>
+                    <span class="info-value amount">KES {{ claim.claimed_amount|intcomma }}</span>
+                </div>
+                {% if claim.approved_amount %}
+                <div class="info-item highlight success">
+                    <span class="info-label">Approved Amount</span>
+                    <span class="info-value amount">KES {{ claim.approved_amount|intcomma }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="description-section">
+                <h4>Incident Description</h4>
+                <p>{{ claim.incident_description }}</p>
+            </div>
+            
+            {% if claim.rejection_reason %}
+            <div class="rejection-notice">
+                <div class="notice-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <div class="notice-content">
+                    <h5>Rejection Reason</h5>
+                    <p>{{ claim.rejection_reason }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Documents -->
+        <div class="detail-card">
+            <div class="card-section-header">
+                <h3>Supporting Documents</h3>
+                <span class="doc-count">{{ documents|length }} files</span>
+            </div>
+            
+            {% if documents %}
+            <div class="documents-grid">
+                {% for doc in documents %}
+                <div class="document-item">
+                    <div class="doc-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="doc-info">
+                        <span class="doc-name">{{ doc.title }}</span>
+                        <span class="doc-meta">{{ doc.get_document_type_display }} • {{ doc.created_at|date:"M d" }}</span>
+                    </div>
+                    <a href="{{ doc.file.url }}" target="_blank" class="doc-download">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="documents-empty">
+                <p>No documents uploaded yet.</p>
+            </div>
+            {% endif %}
+            
+            {% if claim.status == 'draft' %}
+            <div class="upload-section">
+                <form method="post" enctype="multipart/form-data" class="upload-form">
+                    {% csrf_token %}
+                    <div class="upload-fields">
+                        <div class="form-field">
+                            {{ document_form.document_type }}
+                        </div>
+                        <div class="form-field">
+                            {{ document_form.title }}
+                        </div>
+                        <div class="form-field file-field">
+                            {{ document_form.file }}
+                        </div>
+                    </div>
+                    <button type="submit" name="upload_document" class="upload-btn">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
+                        Upload Document
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="claim-sidebar">
+        <!-- Actions -->
+        <div class="sidebar-card">
+            <h4>Actions</h4>
+            {% if claim.status == 'draft' %}
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="submit" class="action-btn primary">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Submit Claim
+                </button>
+            </form>
+            <a href="{% url 'claims:edit' claim.pk %}" class="action-btn secondary">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Edit Claim
+            </a>
+            {% else %}
+            <p class="submit-info">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Submitted on {{ claim.submitted_at|date:"M d, Y" }}
+            </p>
+            {% endif %}
+        </div>
+        
+        <!-- Assigned Adjuster -->
+        {% if claim.assigned_adjuster %}
+        <div class="sidebar-card">
+            <h4>Assigned Adjuster</h4>
+            <div class="adjuster-info">
+                <div class="adjuster-avatar">{{ claim.assigned_adjuster.first_name|slice:":1" }}{{ claim.assigned_adjuster.last_name|slice:":1" }}</div>
+                <div class="adjuster-details">
+                    <span class="adjuster-name">{{ claim.assigned_adjuster.get_full_name }}</span>
+                    <span class="adjuster-role">Claims Adjuster</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Status Timeline -->
+        <div class="sidebar-card">
+            <h4>Status History</h4>
+            <div class="status-timeline">
+                {% if status_history %}
+                {% for history in status_history %}
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-status">{{ history.new_status|title }}</span>
+                        <span class="timeline-date">{{ history.changed_at|date:"M d, Y H:i" }}</span>
+                        {% if history.changed_by %}
+                        <span class="timeline-by">by {{ history.changed_by.get_full_name }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="timeline-empty">No status changes yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-600);
+}
+
+.breadcrumb span {
+    color: var(--color-gray-400);
+}
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.claim-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.claim-status-badge.status-draft { background: #f3f4f6; color: #6b7280; }
+.claim-status-badge.status-submitted { background: #fef3c7; color: #92400e; }
+.claim-status-badge.status-under_review { background: #dbeafe; color: #1e40af; }
+.claim-status-badge.status-approved { background: #dcfce7; color: #166534; }
+.claim-status-badge.status-paid { background: #d1fae5; color: #047857; }
+.claim-status-badge.status-rejected { background: #fee2e2; color: #991b1b; }
+
+/* Layout */
+.claim-detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .claim-detail-layout { grid-template-columns: 1fr; }
+}
+
+.claim-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Cards */
+.detail-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.card-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.card-section-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.doc-count {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.claim-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.25rem;
+    padding: 1.5rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-item.highlight {
+    background: var(--color-gray-50);
+    padding: 1rem;
+    border-radius: 12px;
+    margin: -0.25rem;
+}
+
+.info-item.highlight.success {
+    background: #f0fdf4;
+}
+
+.info-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-gray-500);
+}
+
+.info-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.info-value.amount {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.info-item.success .info-value {
+    color: #16a34a;
+}
+
+.policy-link {
+    color: var(--color-primary-600);
+    text-decoration: none;
+}
+
+.policy-link:hover {
+    text-decoration: underline;
+}
+
+.description-section {
+    padding: 0 1.5rem 1.5rem;
+    border-top: 1px solid var(--color-gray-100);
+    margin-top: 0.5rem;
+    padding-top: 1.5rem;
+}
+
+.description-section h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-gray-700);
+    margin: 0 0 0.75rem;
+}
+
+.description-section p {
+    margin: 0;
+    color: var(--color-gray-600);
+    line-height: 1.6;
+}
+
+.rejection-notice {
+    display: flex;
+    gap: 1rem;
+    margin: 0 1.5rem 1.5rem;
+    padding: 1rem;
+    background: #fef2f2;
+    border-radius: 12px;
+    border-left: 4px solid #dc2626;
+}
+
+.notice-icon {
+    color: #dc2626;
+}
+
+.notice-content h5 {
+    margin: 0 0 0.25rem;
+    font-size: 0.9rem;
+    color: #991b1b;
+}
+
+.notice-content p {
+    margin: 0;
+    color: #b91c1c;
+    font-size: 0.9rem;
+}
+
+/* Documents */
+.documents-grid {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+}
+
+.document-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    transition: background 0.15s;
+}
+
+.document-item:hover {
+    background: var(--color-gray-50);
+}
+
+.doc-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--color-primary-50);
+    color: var(--color-primary-600);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.doc-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.doc-name {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.doc-meta {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.doc-download {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: var(--color-gray-500);
+    transition: all 0.15s;
+}
+
+.doc-download:hover {
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+}
+
+.documents-empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--color-gray-500);
+}
+
+.upload-section {
+    padding: 1.5rem;
+    background: var(--color-gray-50);
+    border-top: 1px solid var(--color-gray-100);
+}
+
+.upload-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: var(--color-primary-600);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.upload-btn:hover {
+    background: var(--color-primary-700);
+}
+
+/* Sidebar */
+.claim-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sidebar-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.sidebar-card h4 {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 0.5rem;
+    border: none;
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
+    color: white;
+}
+
+.action-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.action-btn.secondary {
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+}
+
+.action-btn.secondary:hover {
+    background: var(--color-gray-200);
+}
+
+.submit-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--color-gray-500);
+    margin: 0;
+}
+
+.adjuster-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.adjuster-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--color-primary-100), var(--color-primary-200));
+    color: var(--color-primary-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.adjuster-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.adjuster-name {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.adjuster-role {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+/* Timeline */
+.status-timeline {
+    position: relative;
+}
+
+.timeline-item {
+    display: flex;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    position: relative;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 12px;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-gray-200);
+}
+
+.timeline-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-primary-500);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.timeline-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.timeline-status {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--color-gray-900);
+}
+
+.timeline-date {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.timeline-by {
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+}
+
+.timeline-empty {
+    font-size: 0.85rem;
+    color: var(--color-gray-500);
+    margin: 0;
+}
+</style>
+{% endblock %}

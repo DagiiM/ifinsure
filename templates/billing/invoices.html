@@ -1,0 +1,512 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Billing & Invoices - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">Billing & Invoices</h1>
+        <p class="page-subtitle">Manage payments and view your invoice history</p>
+    </div>
+</div>
+
+<!-- Billing Summary -->
+<div class="billing-summary">
+    <div class="summary-card balance {% if total_due > 0 %}has-balance{% endif %}">
+        <div class="summary-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <div class="summary-content">
+            <span class="summary-label">Total Balance Due</span>
+            <span class="summary-value">KES {{ total_due|intcomma }}</span>
+        </div>
+        {% if total_due > 0 %}
+        <div class="summary-action">
+            <span class="action-badge urgent">Payment Required</span>
+        </div>
+        {% else %}
+        <div class="summary-action">
+            <span class="action-badge clear">All Clear</span>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="summary-stats">
+        <div class="mini-stat">
+            <span class="mini-value {% if overdue_count > 0 %}text-danger{% endif %}">{{ overdue_count }}</span>
+            <span class="mini-label">Overdue</span>
+        </div>
+        <div class="mini-stat">
+            <span class="mini-value">{{ pending_count|default:0 }}</span>
+            <span class="mini-label">Pending</span>
+        </div>
+        <div class="mini-stat">
+            <span class="mini-value text-success">{{ paid_count|default:0 }}</span>
+            <span class="mini-label">Paid This Month</span>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="billing-filter-bar">
+    <form method="get" class="filter-form">
+        <div class="filter-group">
+            <label>Status</label>
+            <select name="status" onchange="this.form.submit()">
+                <option value="">All Invoices</option>
+                <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="overdue" {% if request.GET.status == 'overdue' %}selected{% endif %}>Overdue</option>
+                <option value="partial" {% if request.GET.status == 'partial' %}selected{% endif %}>Partially Paid</option>
+                <option value="paid" {% if request.GET.status == 'paid' %}selected{% endif %}>Paid</option>
+            </select>
+        </div>
+        {% if request.GET.status %}
+        <a href="{% url 'billing:invoices' %}" class="filter-clear">Clear Filter</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Invoices -->
+<div class="invoices-container">
+    {% if invoices %}
+    <div class="invoices-table-wrapper">
+        <table class="invoices-table">
+            <thead>
+                <tr>
+                    <th>Invoice</th>
+                    <th>Policy</th>
+                    <th>Amount</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in invoices %}
+                <tr class="{% if invoice.is_overdue %}overdue-row{% endif %}">
+                    <td class="invoice-cell">
+                        <a href="{% url 'billing:invoice_detail' invoice.pk %}" class="invoice-link">
+                            {{ invoice.invoice_number }}
+                        </a>
+                        <span class="invoice-date">{{ invoice.issued_date|date:"M d, Y" }}</span>
+                    </td>
+                    <td class="policy-cell">
+                        {% if invoice.policy %}
+                        <span class="policy-name">{{ invoice.policy.product.name|truncatewords:3 }}</span>
+                        <span class="policy-number">{{ invoice.policy.policy_number }}</span>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="amount-cell">KES {{ invoice.amount|intcomma }}</td>
+                    <td class="paid-cell">
+                        <span class="{% if invoice.paid_amount > 0 %}text-success{% else %}text-muted{% endif %}">
+                            KES {{ invoice.paid_amount|intcomma }}
+                        </span>
+                    </td>
+                    <td class="balance-cell">
+                        <span class="{% if invoice.balance > 0 %}balance-due{% else %}balance-clear{% endif %}">
+                            KES {{ invoice.balance|intcomma }}
+                        </span>
+                    </td>
+                    <td class="due-cell">
+                        <span class="{% if invoice.is_overdue %}text-danger{% endif %}">
+                            {{ invoice.due_date|date:"M d, Y" }}
+                        </span>
+                        {% if invoice.is_overdue %}
+                        <span class="overdue-badge">Overdue</span>
+                        {% endif %}
+                    </td>
+                    <td class="status-cell">
+                        <span class="invoice-status status-{{ invoice.status }}">
+                            {{ invoice.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="actions-cell">
+                        {% if invoice.balance > 0 %}
+                        <a href="{% url 'billing:pay' invoice.pk %}" class="pay-btn">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                            </svg>
+                            Pay
+                        </a>
+                        {% else %}
+                        <a href="{% url 'billing:invoice_detail' invoice.pk %}" class="view-btn">View</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% include 'includes/pagination.html' %}
+    {% else %}
+    <div class="invoices-empty">
+        <div class="empty-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="64" height="64">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"></path>
+            </svg>
+        </div>
+        <h3>No Invoices</h3>
+        <p>You don't have any invoices yet. Invoices will appear here when you have active policies.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Billing Summary */
+.billing-summary {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.summary-card {
+    flex: 2;
+    min-width: 300px;
+    background: white;
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border: 2px solid transparent;
+}
+
+.summary-card.has-balance {
+    border-color: #fca5a5;
+    background: linear-gradient(135deg, #fef2f2 0%, white 100%);
+}
+
+.summary-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary-100);
+    color: var(--color-primary-600);
+}
+
+.summary-card.has-balance .summary-icon {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.summary-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-label {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.summary-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+    line-height: 1.2;
+}
+
+.summary-card.has-balance .summary-value {
+    color: #dc2626;
+}
+
+.action-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.action-badge.urgent {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.action-badge.clear {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.summary-stats {
+    flex: 1;
+    min-width: 250px;
+    background: white;
+    border-radius: 20px;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-around;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.mini-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem;
+}
+
+.mini-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+.mini-label {
+    font-size: 0.7rem;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+}
+
+/* Filter Bar */
+.billing-filter-bar {
+    background: white;
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.filter-form {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-gray-600);
+}
+
+.filter-group select {
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    background: white;
+    cursor: pointer;
+}
+
+.filter-clear {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.filter-clear:hover {
+    color: var(--color-primary-600);
+}
+
+/* Invoices Table */
+.invoices-container {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.invoices-table-wrapper {
+    overflow-x: auto;
+}
+
+.invoices-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.invoices-table th {
+    padding: 1rem 1.25rem;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-gray-500);
+    background: var(--color-gray-50);
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.invoices-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    font-size: 0.9rem;
+}
+
+.invoices-table tr:last-child td {
+    border-bottom: none;
+}
+
+.invoices-table tr:hover {
+    background: var(--color-gray-50);
+}
+
+.invoices-table tr.overdue-row {
+    background: #fef2f2;
+}
+
+.invoice-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.invoice-link {
+    font-weight: 600;
+    color: var(--color-primary-600);
+    text-decoration: none;
+}
+
+.invoice-link:hover {
+    text-decoration: underline;
+}
+
+.invoice-date {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.policy-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.policy-name {
+    font-weight: 500;
+}
+
+.policy-number {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.balance-due {
+    font-weight: 700;
+    color: #dc2626;
+}
+
+.balance-clear {
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.due-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.overdue-badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.125rem 0.375rem;
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 4px;
+    width: fit-content;
+}
+
+.invoice-status {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.invoice-status.status-draft { background: #f3f4f6; color: #6b7280; }
+.invoice-status.status-pending { background: #fef3c7; color: #92400e; }
+.invoice-status.status-partial { background: #dbeafe; color: #1e40af; }
+.invoice-status.status-paid { background: #dcfce7; color: #166534; }
+.invoice-status.status-overdue { background: #fee2e2; color: #991b1b; }
+.invoice-status.status-cancelled { background: #f3f4f6; color: #6b7280; }
+
+.pay-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.pay-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.view-btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-gray-600);
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.view-btn:hover {
+    background: var(--color-gray-50);
+    border-color: var(--color-gray-300);
+}
+
+/* Empty State */
+.invoices-empty {
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.empty-icon {
+    color: var(--color-gray-300);
+    margin-bottom: 1.5rem;
+}
+
+.invoices-empty h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0 0 0.5rem;
+}
+
+.invoices-empty p {
+    color: var(--color-gray-500);
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.text-success { color: #16a34a; }
+.text-danger { color: #dc2626; }
+.text-muted { color: var(--color-gray-400); }
+</style>
+{% endblock %}

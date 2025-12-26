@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Staff Dashboard - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Staff Dashboard</h1>
+    <p>Claims processing and billing management</p>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-4 gap-4 mb-6">
+    <div class="stat-card">
+        <div class="stat-card-label">Claims to Review</div>
+        <div class="stat-card-value {% if claims_to_review > 0 %}text-warning{% endif %}">{{ claims_to_review }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Investigating</div>
+        <div class="stat-card-value">{{ investigating_claims }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Approved (Pending Payment)</div>
+        <div class="stat-card-value">{{ approved_claims }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Overdue Invoices</div>
+        <div class="stat-card-value {% if overdue_invoices > 0 %}text-danger{% endif %}">{{ overdue_invoices }}</div>
+    </div>
+</div>
+
+<!-- Claims Queue -->
+<div class="card mb-6">
+    <div class="card-header flex justify-between items-center">
+        <h4>Claims Queue</h4>
+        <a href="{% url 'claims:staff_list' %}" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_claims %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Claim</th>
+                    <th>Policy</th>
+                    <th>Claimant</th>
+                    <th>Amount</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for claim in recent_claims %}
+                <tr>
+                    <td>{{ claim.claim_number }}</td>
+                    <td>{{ claim.policy.policy_number }}</td>
+                    <td>{{ claim.claimant.get_full_name }}</td>
+                    <td>KES {{ claim.claimed_amount|intcomma }}</td>
+                    <td>
+                        <span class="badge badge-{% if claim.priority == 'urgent' %}danger{% elif claim.priority == 'high' %}warning{% else %}default{% endif %}">
+                            {{ claim.get_priority_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if claim.status == 'submitted' %}info{% elif claim.status == 'under_review' %}warning{% else %}default{% endif %}">
+                            {{ claim.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ claim.submitted_at|date:"M d, Y"|default:"-" }}</td>
+                    <td>
+                        <a href="{% url 'claims:staff_detail' claim.pk %}" class="btn btn-primary btn-sm">Process</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>No claims pending processing.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="grid grid-2 gap-6">
+    <div class="card">
+        <div class="card-header">
+            <h4>Quick Actions</h4>
+        </div>
+        <div class="card-body">
+            <div class="flex flex-col gap-3">
+                <a href="{% url 'claims:staff_list' %}?status=submitted" class="btn btn-secondary btn-block">
+                    Review New Claims
+                </a>
+                <a href="{% url 'billing:staff_invoices' %}?overdue_only=true" class="btn btn-secondary btn-block">
+                    View Overdue Invoices
+                </a>
+                <a href="{% url 'billing:staff_invoice_create' %}" class="btn btn-secondary btn-block">
+                    Create Invoice
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h4>Billing Summary</h4>
+        </div>
+        <div class="card-body">
+            <div class="profile-grid">
+                <div class="profile-item">
+                    <span class="profile-label">Pending Payments</span>
+                    <span class="profile-value">KES {{ pending_payments|intcomma }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Overdue Invoices</span>
+                    <span class="profile-value {% if overdue_invoices > 0 %}text-danger{% endif %}">{{ overdue_invoices }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-4);
+}
+
+.profile-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.profile-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.profile-value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-gray-900);
+}
+</style>
+{% endblock %}

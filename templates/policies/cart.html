@@ -1,0 +1,474 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - ifinsure</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/variables.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <style>
+        :root {
+            --color-primary-50: #eef2ff;
+            --color-primary-100: #e0e7ff;
+            --color-primary-500: #6366f1;
+            --color-primary-600: #4f46e5;
+            --color-primary-700: #4338ca;
+            --color-gray-50: #f9fafb;
+            --color-gray-100: #f3f4f6;
+            --color-gray-200: #e5e7eb;
+            --color-gray-400: #9ca3af;
+            --color-gray-500: #6b7280;
+            --color-gray-600: #4b5563;
+            --color-gray-700: #374151;
+            --color-gray-900: #111827;
+            --color-success: #10b981;
+            --color-danger: #ef4444;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--color-gray-50);
+            color: var(--color-gray-900);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        /* Page-specific overrides */
+        .header-inner {
+            max-width: 1200px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary {
+            background: var(--color-primary-600);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--color-primary-700);
+        }
+        
+        .btn-outline {
+            background: white;
+            color: var(--color-gray-700);
+            border: 1px solid var(--color-gray-200);
+        }
+        
+        .btn-outline:hover {
+            border-color: var(--color-primary-500);
+            color: var(--color-primary-600);
+        }
+        
+        .btn-danger {
+            background: var(--color-danger);
+            color: white;
+        }
+        
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+        
+        .btn-lg {
+            padding: 1rem 2rem;
+            font-size: 1rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            margin-top: var(--header-height);
+        }
+        
+        .page-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-subtitle {
+            color: var(--color-gray-500);
+            margin-bottom: 2rem;
+        }
+        
+        .cart-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 2rem;
+            align-items: start;
+        }
+        
+        @media (max-width: 900px) {
+            .cart-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .cart-items {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .cart-item {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+        
+        .cart-item-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .cart-item-content {
+            flex: 1;
+        }
+        
+        .cart-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        
+        .cart-item h3 {
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+        
+        .cart-item-category {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            background: var(--color-gray-100);
+            color: var(--color-gray-600);
+        }
+        
+        .cart-item-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--color-gray-50);
+            border-radius: 8px;
+        }
+        
+        .detail-item {
+            text-align: center;
+        }
+        
+        .detail-label {
+            font-size: 0.75rem;
+            color: var(--color-gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .detail-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-gray-900);
+        }
+        
+        .cart-item-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+        
+        .remove-btn {
+            background: none;
+            border: none;
+            color: var(--color-danger);
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .remove-btn:hover {
+            text-decoration: underline;
+        }
+        
+        /* Summary Card */
+        .cart-summary {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 2rem;
+        }
+        
+        .cart-summary h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--color-gray-100);
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+        
+        .summary-row.total {
+            font-size: 1.125rem;
+            font-weight: 700;
+            padding-top: 1rem;
+            border-top: 1px solid var(--color-gray-200);
+            margin-top: 1rem;
+        }
+        
+        .summary-actions {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .summary-actions .btn {
+            width: 100%;
+        }
+        
+        .summary-note {
+            font-size: 0.8rem;
+            color: var(--color-gray-500);
+            text-align: center;
+            margin-top: 1rem;
+        }
+        
+        /* Empty Cart */
+        .empty-cart {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 16px;
+        }
+        
+        .empty-cart svg {
+            color: var(--color-gray-300);
+            margin-bottom: 1rem;
+        }
+        
+        .empty-cart h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-cart p {
+            color: var(--color-gray-500);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Messages */
+        .messages {
+            margin-bottom: 1rem;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .alert-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .alert-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-left">
+                <a href="/" class="header-logo header-logo-gradient">ifinsure</a>
+                <nav class="header-nav">
+                    <a href="{% url 'policies:products' %}" class="header-nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        Back to Products
+                    </a>
+                </nav>
+            </div>
+            
+            <div class="header-right">
+                {% if user.is_authenticated %}
+                <a href="{% url 'dashboard:home' %}" class="btn btn-outline btn-sm">Dashboard</a>
+                {% else %}
+                <a href="{% url 'accounts:login' %}" class="btn btn-outline btn-sm">Log In</a>
+                <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Get Started</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <h1 class="page-title">Shopping Cart</h1>
+        <p class="page-subtitle">Review your selected insurance products</p>
+        
+        {% if cart.is_empty %}
+        <div class="empty-cart">
+            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <circle cx="9" cy="21" r="1"/>
+                <circle cx="20" cy="21" r="1"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+            <h3>Your cart is empty</h3>
+            <p>Browse our insurance products and add them to your cart.</p>
+            <a href="{% url 'policies:products' %}" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Browse Products
+            </a>
+        </div>
+        {% else %}
+        <div class="cart-layout">
+            <div class="cart-items">
+                {% for item in cart %}
+                <div class="cart-item">
+                    <div class="cart-item-icon" style="background: #dbeafe; color: #1d4ed8;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    
+                    <div class="cart-item-content">
+                        <div class="cart-item-header">
+                            <div>
+                                <h3>{{ item.product_name }}</h3>
+                                <span class="cart-item-category">{{ item.category }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="cart-item-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Coverage</div>
+                                <div class="detail-value">KES {{ item.coverage_amount|floatformat:0 }}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Term</div>
+                                <div class="detail-value">{{ item.term_months }} months</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Premium</div>
+                                <div class="detail-value" style="color: var(--color-primary-600);">KES {{ item.premium|floatformat:0 }}/mo</div>
+                            </div>
+                        </div>
+                        
+                        <div class="cart-item-actions">
+                            <form method="post" action="{% url 'policies:cart_remove' item.product_id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="remove-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    Remove
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+                    <a href="{% url 'policies:products' %}" class="btn btn-outline">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        Continue Shopping
+                    </a>
+                    
+                    <form method="post" action="{% url 'policies:cart_clear' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline" style="color: var(--color-danger);">Clear Cart</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="cart-summary">
+                <h3>Order Summary</h3>
+                
+                <div class="summary-row">
+                    <span>Products</span>
+                    <span>{{ cart|length }} item(s)</span>
+                </div>
+                
+                <div class="summary-row">
+                    <span>Total Coverage</span>
+                    <span>KES {{ cart.get_total_coverage|floatformat:0 }}</span>
+                </div>
+                
+                <div class="summary-row total">
+                    <span>Monthly Premium</span>
+                    <span style="color: var(--color-primary-600);">KES {{ cart.get_total_premium|floatformat:0 }}</span>
+                </div>
+                
+                <div class="summary-actions">
+                    <a href="{% url 'policies:checkout' %}" class="btn btn-primary btn-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><path d="M9 12h6M9 16h6M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+                        Proceed to Apply
+                    </a>
+                </div>
+                
+                <p class="summary-note">
+                    {% if user.is_authenticated %}
+                    You'll review your applications before submitting.
+                    {% else %}
+                    You'll need to log in or register to complete your application.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

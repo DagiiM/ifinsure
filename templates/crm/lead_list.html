@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Leads - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">Leads Pipeline</h1>
+        <p class="page-subtitle">Track and manage sales leads</p>
+    </div>
+    <a href="{% url 'admin:crm_lead_add' %}" class="btn btn-primary">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        New Lead
+    </a>
+</div>
+
+<!-- Pipeline Overview -->
+<div class="pipeline-overview">
+    <a href="?status=new" class="pipeline-stage {% if selected_status == 'new' %}active{% endif %}">
+        <span class="stage-count">{{ pipeline_counts.new }}</span>
+        <span class="stage-name">New</span>
+    </a>
+    <a href="?status=contacted" class="pipeline-stage {% if selected_status == 'contacted' %}active{% endif %}">
+        <span class="stage-count">{{ pipeline_counts.contacted }}</span>
+        <span class="stage-name">Contacted</span>
+    </a>
+    <a href="?status=qualified" class="pipeline-stage {% if selected_status == 'qualified' %}active{% endif %}">
+        <span class="stage-count">{{ pipeline_counts.qualified }}</span>
+        <span class="stage-name">Qualified</span>
+    </a>
+    <a href="?status=proposal" class="pipeline-stage {% if selected_status == 'proposal' %}active{% endif %}">
+        <span class="stage-count">{{ pipeline_counts.proposal }}</span>
+        <span class="stage-name">Proposal</span>
+    </a>
+    <a href="?status=won" class="pipeline-stage won {% if selected_status == 'won' %}active{% endif %}">
+        <span class="stage-count">{{ pipeline_counts.won }}</span>
+        <span class="stage-name">Won</span>
+    </a>
+    <a href="?status=lost" class="pipeline-stage lost {% if selected_status == 'lost' %}active{% endif %}">
+        <span class="stage-count">{{ pipeline_counts.lost }}</span>
+        <span class="stage-name">Lost</span>
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="filter-bar">
+    <a href="{% url 'crm:lead_list' %}" class="filter-btn {% if not selected_status and not request.GET.mine %}active{% endif %}">All Leads</a>
+    <a href="?mine=1" class="filter-btn {% if request.GET.mine %}active{% endif %}">My Leads</a>
+</div>
+
+<!-- Lead List -->
+<div class="lead-list">
+    {% for lead in leads %}
+    <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="lead-card">
+        <div class="lead-priority p{{ lead.priority }}">{{ lead.priority }}</div>
+        <div class="lead-main">
+            <div class="lead-header">
+                <span class="lead-number">{{ lead.lead_number }}</span>
+                <span class="lead-status status-{{ lead.status }}">{{ lead.get_status_display }}</span>
+            </div>
+            <h3 class="lead-name">{{ lead.name }}</h3>
+            <p class="lead-company">{{ lead.company|default:"-" }}</p>
+        </div>
+        <div class="lead-info">
+            <div class="info-item">
+                <span class="info-label">Interest</span>
+                <span class="info-value">{{ lead.interest_category.name|default:"General" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Source</span>
+                <span class="info-value">{{ lead.get_source_display }}</span>
+            </div>
+        </div>
+        <div class="lead-contact">
+            <span class="contact-phone">📞 {{ lead.phone }}</span>
+            {% if lead.email %}
+            <span class="contact-email">✉️ {{ lead.email|truncatechars:20 }}</span>
+            {% endif %}
+        </div>
+        <div class="lead-meta">
+            {% if lead.follow_up_date %}
+            <span class="follow-up {% if lead.follow_up_date == today %}today{% endif %}">
+                📅 {{ lead.follow_up_date|date:"M d" }}
+            </span>
+            {% endif %}
+            {% if lead.assigned_to %}
+            <span class="assigned">{{ lead.assigned_to.first_name|slice:":1" }}{{ lead.assigned_to.last_name|slice:":1" }}</span>
+            {% endif %}
+        </div>
+    </a>
+    {% empty %}
+    <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+        </svg>
+        <h3>No leads found</h3>
+        <p>Create a new lead to get started</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}">← Previous</a>
+    {% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if selected_status %}&status={{ selected_status }}{% endif %}">Next →</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<style>
+.pipeline-overview {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .pipeline-overview { grid-template-columns: repeat(3, 1fr); }
+}
+
+.pipeline-stage {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+
+.pipeline-stage:hover {
+    transform: translateY(-2px);
+}
+
+.pipeline-stage.active {
+    border-color: var(--color-primary-500);
+}
+
+.pipeline-stage.won .stage-count { color: #16a34a; }
+.pipeline-stage.lost .stage-count { color: #dc2626; }
+
+.stage-count {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+}
+
+.stage-name {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+}
+
+.filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-btn {
+    padding: 0.5rem 1rem;
+    background: white;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--color-gray-600);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.filter-btn.active {
+    background: var(--color-primary-600);
+    color: white;
+}
+
+.lead-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.lead-card {
+    display: grid;
+    grid-template-columns: auto 1fr 150px 180px auto;
+    gap: 1.5rem;
+    align-items: center;
+    background: white;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: all 0.2s;
+}
+
+.lead-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 900px) {
+    .lead-card {
+        grid-template-columns: auto 1fr;
+        gap: 1rem;
+    }
+    .lead-info, .lead-contact, .lead-meta {
+        display: none;
+    }
+}
+
+.lead-priority {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: var(--color-gray-200);
+    color: var(--color-gray-600);
+}
+
+.lead-priority.p1 { background: #fee2e2; color: #dc2626; }
+.lead-priority.p2 { background: #ffedd5; color: #ea580c; }
+.lead-priority.p3 { background: #fef3c7; color: #d97706; }
+
+.lead-main {
+    min-width: 0;
+}
+
+.lead-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.lead-number {
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+    font-family: monospace;
+}
+
+.lead-status {
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 50px;
+    text-transform: uppercase;
+}
+
+.status-new { background: #dbeafe; color: #1e40af; }
+.status-contacted { background: #e0e7ff; color: #4338ca; }
+.status-qualified { background: #fef3c7; color: #92400e; }
+.status-proposal { background: #f3e8ff; color: #7c3aed; }
+.status-negotiation { background: #ffedd5; color: #ea580c; }
+.status-won { background: #dcfce7; color: #166534; }
+.status-lost { background: #fee2e2; color: #dc2626; }
+
+.lead-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0;
+}
+
+.lead-company {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+    margin: 0;
+}
+
+.lead-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-item {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.info-label {
+    color: var(--color-gray-400);
+}
+
+.info-value {
+    color: var(--color-gray-700);
+    font-weight: 500;
+}
+
+.lead-contact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--color-gray-600);
+}
+
+.lead-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.follow-up {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    background: var(--color-gray-100);
+    border-radius: 4px;
+    color: var(--color-gray-600);
+}
+
+.follow-up.today {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.assigned {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-primary-100);
+    color: var(--color-primary-600);
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--color-gray-400);
+}
+
+.empty-state h3 {
+    margin-top: 1rem;
+    color: var(--color-gray-600);
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.pagination a {
+    padding: 0.5rem 1rem;
+    background: white;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--color-primary-600);
+    font-weight: 500;
+}
+</style>
+{% endblock %}

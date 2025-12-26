@@ -1,0 +1,494 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}CRM Dashboard - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">CRM Dashboard</h1>
+        <p class="page-subtitle">Manage providers, products, customers, and leads</p>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="crm-stats">
+    <a href="{% url 'crm:provider_list' %}" class="stat-card">
+        <div class="stat-icon blue">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">{{ provider_count }}</span>
+            <span class="stat-label">Providers</span>
+        </div>
+    </a>
+    <a href="{% url 'crm:product_catalog' %}" class="stat-card">
+        <div class="stat-icon green">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">{{ product_count }}</span>
+            <span class="stat-label">Products</span>
+        </div>
+    </a>
+    <a href="{% url 'crm:customer_list' %}" class="stat-card">
+        <div class="stat-icon purple">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">{{ customer_count }}</span>
+            <span class="stat-label">Customers</span>
+        </div>
+    </a>
+    <a href="{% url 'crm:lead_list' %}" class="stat-card">
+        <div class="stat-icon orange">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">{{ lead_count }}</span>
+            <span class="stat-label">Active Leads</span>
+        </div>
+    </a>
+</div>
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+    <a href="{% url 'crm:customer_create' %}" class="action-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+        </svg>
+        New Customer
+    </a>
+    <a href="{% url 'admin:crm_lead_add' %}" class="action-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        New Lead
+    </a>
+    <a href="{% url 'crm:product_catalog' %}" class="action-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        Browse Products
+    </a>
+</div>
+
+<div class="crm-grid">
+    <!-- Featured Products -->
+    <div class="crm-section">
+        <div class="section-header">
+            <h3>Featured Products</h3>
+            <a href="{% url 'crm:product_catalog' %}" class="section-link">View All →</a>
+        </div>
+        <div class="product-grid">
+            {% for product in featured_products %}
+            <a href="{% url 'crm:product_detail' code=product.code %}" class="product-card">
+                <div class="product-provider" style="background: {{ product.provider.primary_color|default:'#6366f1' }}">
+                    {{ product.provider.code }}
+                </div>
+                <h4 class="product-name">{{ product.name }}</h4>
+                <p class="product-desc">{{ product.short_description|truncatechars:60 }}</p>
+                <div class="product-meta">
+                    <span class="product-category">{{ product.category.name }}</span>
+                    <span class="product-commission">{{ product.effective_commission_rate }}% comm.</span>
+                </div>
+            </a>
+            {% empty %}
+            <p class="empty-text">No featured products</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Today's Follow-ups -->
+    <div class="crm-section">
+        <div class="section-header">
+            <h3>Today's Follow-ups</h3>
+            <a href="{% url 'crm:lead_list' %}" class="section-link">View Leads →</a>
+        </div>
+        {% if todays_followups %}
+        <div class="followup-list">
+            {% for lead in todays_followups %}
+            <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="followup-item">
+                <div class="followup-info">
+                    <span class="followup-name">{{ lead.name }}</span>
+                    <span class="followup-interest">{{ lead.interest_category.name|default:"General" }}</span>
+                </div>
+                <span class="followup-phone">{{ lead.phone }}</span>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="40" height="40">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <p>No follow-ups scheduled for today</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="crm-grid">
+    <!-- Recent Customers -->
+    <div class="crm-section">
+        <div class="section-header">
+            <h3>Recent Customers</h3>
+            <a href="{% url 'crm:customer_list' %}" class="section-link">View All →</a>
+        </div>
+        <div class="customer-list">
+            {% for customer in recent_customers %}
+            <a href="{% url 'crm:customer_detail' pk=customer.pk %}" class="customer-item">
+                <div class="customer-avatar {{ customer.customer_type }}">
+                    {% if customer.customer_type == 'corporate' %}
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"></path>
+                    </svg>
+                    {% else %}
+                    {{ customer.first_name|slice:":1"|upper }}{{ customer.last_name|slice:":1"|upper }}
+                    {% endif %}
+                </div>
+                <div class="customer-info">
+                    <span class="customer-name">{{ customer }}</span>
+                    <span class="customer-contact">{{ customer.phone|default:customer.email }}</span>
+                </div>
+                <span class="customer-stage stage-{{ customer.lifecycle_stage }}">{{ customer.get_lifecycle_stage_display }}</span>
+            </a>
+            {% empty %}
+            <p class="empty-text">No customers yet</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Recent Leads -->
+    <div class="crm-section">
+        <div class="section-header">
+            <h3>Recent Leads</h3>
+            <a href="{% url 'crm:lead_list' %}" class="section-link">View All →</a>
+        </div>
+        <div class="lead-list">
+            {% for lead in recent_leads %}
+            <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="lead-item">
+                <div class="lead-priority p{{ lead.priority }}">{{ lead.priority }}</div>
+                <div class="lead-info">
+                    <span class="lead-name">{{ lead.name }}</span>
+                    <span class="lead-source">{{ lead.get_source_display }}</span>
+                </div>
+                <span class="lead-status status-{{ lead.status }}">{{ lead.get_status_display }}</span>
+            </a>
+            {% empty %}
+            <p class="empty-text">No leads yet</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Stats */
+.crm-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .crm-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon.blue { background: #dbeafe; color: #2563eb; }
+.stat-icon.green { background: #dcfce7; color: #16a34a; }
+.stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+.stat-icon.orange { background: #ffedd5; color: #ea580c; }
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+    margin-top: 0.25rem;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: white;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+}
+
+/* Grid */
+.crm-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .crm-grid { grid-template-columns: 1fr; }
+}
+
+.crm-section {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.section-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+.section-link {
+    font-size: 0.875rem;
+    color: var(--color-primary-600);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+/* Product Grid */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.product-card {
+    background: var(--color-gray-50);
+    border-radius: 12px;
+    padding: 1rem;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.product-card:hover {
+    background: var(--color-primary-50);
+}
+
+.product-provider {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.product-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: 0.25rem;
+}
+
+.product-desc {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    margin-bottom: 0.5rem;
+}
+
+.product-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+}
+
+.product-category {
+    color: var(--color-gray-500);
+}
+
+.product-commission {
+    color: var(--color-green-600);
+    font-weight: 600;
+}
+
+/* Lists */
+.followup-list, .customer-list, .lead-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.followup-item, .customer-item, .lead-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--color-gray-50);
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.followup-item:hover, .customer-item:hover, .lead-item:hover {
+    background: var(--color-gray-100);
+}
+
+.customer-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.customer-avatar.corporate {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.followup-info, .customer-info, .lead-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.followup-name, .customer-name, .lead-name {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-gray-900);
+}
+
+.followup-interest, .customer-contact, .lead-source {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.followup-phone {
+    font-size: 0.8rem;
+    color: var(--color-gray-600);
+}
+
+.customer-stage, .lead-status {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 50px;
+    text-transform: uppercase;
+}
+
+.stage-customer { background: #dcfce7; color: #166534; }
+.stage-lead { background: #dbeafe; color: #1e40af; }
+.stage-vip { background: #fef3c7; color: #92400e; }
+
+.lead-priority {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: var(--color-gray-200);
+    color: var(--color-gray-600);
+}
+
+.lead-priority.p1 { background: #fee2e2; color: #dc2626; }
+.lead-priority.p2 { background: #ffedd5; color: #ea580c; }
+.lead-priority.p3 { background: #fef3c7; color: #d97706; }
+
+.status-new { background: #dbeafe; color: #1e40af; }
+.status-contacted { background: #e0e7ff; color: #4338ca; }
+.status-qualified { background: #fef3c7; color: #92400e; }
+.status-won { background: #dcfce7; color: #166534; }
+.status-lost { background: #fee2e2; color: #dc2626; }
+
+/* Empty */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--color-gray-400);
+}
+
+.empty-state svg {
+    margin-bottom: 0.5rem;
+}
+
+.empty-text {
+    text-align: center;
+    color: var(--color-gray-400);
+    font-style: italic;
+    padding: 1rem;
+}
+</style>
+{% endblock %}

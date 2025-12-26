@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Thank You - ifinsure{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-success">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9 12l2 2 4-4"/>
+            </svg>
+        </div>
+        
+        <h1 class="mb-3">Thank You for Your Review!</h1>
+        <p class="text-lg text-muted mb-4" style="max-width: 500px; margin: 0 auto;">
+            Your feedback means a lot to us. Your review will be published after our team reviews it, typically within 24 hours.
+        </p>
+        
+        <div class="flex gap-3 justify-center">
+            <a href="{% url 'dashboard:home' %}" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Go to Dashboard
+            </a>
+            <a href="{% url 'core:my_reviews' %}" class="btn btn-outline">
+                View My Reviews
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

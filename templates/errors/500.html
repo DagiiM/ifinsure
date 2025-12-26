@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Server Error - ifinsure{% endblock %}
+
+{% block auth_content %}
+<div class="error-page">
+    <h1.>500</h1.>
+    <h2.>Server Error</h2.>
+    <p>Something went wrong on our end. Please try again later.</p>
+    <a href="/" class="btn btn-primary">Go Home</a>
+</div>
+
+<style>
+.error-page {
+    text-align: center;
+    padding: var(--spacing-1.2.) var(--spacing-4.);
+}
+
+.error-page h1. {
+    font-size: 6rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-gray-3.00);
+    margin-bottom: var(--spacing-2.);
+}
+
+.error-page h2. {
+    font-size: var(--font-size-2.xl);
+    color: var(--color-gray-700);
+    margin-bottom: var(--spacing-4.);
+}
+
+.error-page p {
+    color: var(--color-gray-500);
+    margin-bottom: var(--spacing-6);
+}
+</style>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,1170 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ifinsure - Insurance for the Modern Era</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/variables.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <style>
+        :root {
+            --perspective: 1000px;
+        }
+
+        body {
+            background-color: var(--color-white);
+            color: var(--color-gray-900);
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        .landing-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .landing-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-800));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8rem 2rem 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+            /* Mesh Gradient Background */
+            background-color: var(--color-white);
+            z-index: 1;
+        }
+
+        .hero-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .gradient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: orbFloat 20s infinite ease-in-out alternate;
+        }
+
+        .orb-1 {
+            top: -10%;
+            right: -5%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(79, 70, 229, 0.3) 0%, rgba(79, 70, 229, 0) 70%);
+            animation-duration: 25s;
+        }
+
+        .orb-2 {
+            bottom: 10%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0) 70%);
+            animation-duration: 30s;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            top: 40%;
+            left: 40%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.2) 0%, rgba(236, 72, 153, 0) 70%);
+            animation-duration: 20s;
+            animation-delay: -10s;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .hero-text {
+            animation: fadeUp 1s ease-out;
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #111827, #4b5563);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--color-gray-500);
+            margin-bottom: 2.5rem;
+            max-width: 90%;
+            line-height: 1.6;
+        }
+
+        .hero-visual {
+            position: relative;
+            animation: fadeIn 1s ease-out 0.3s backwards;
+        }
+
+        .hero-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            transform: perspective(var(--perspective)) rotateY(-5deg) rotateX(5deg);
+            transition: transform 0.5s ease;
+        }
+
+        .hero-card:hover {
+            transform: perspective(var(--perspective)) rotateY(0) rotateX(0) translateY(-10px);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 8rem 2rem;
+            background: #fafafa;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 5rem;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--color-gray-100);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+            border-color: var(--color-primary-100);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--color-primary-50);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-primary-600);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        /* Stats Section */
+        .stats {
+            padding: 6rem 2rem;
+            background: #111827;
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #9ca3af;
+            font-weight: 500;
+        }
+
+        /* CTA Section */
+        .cta {
+            padding: 8rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(79, 70, 229, 0.05) 0%, rgba(255, 255, 255, 0) 70%);
+            z-index: -1;
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(30px, 30px) rotate(10deg); }
+        }
+
+        /* Trusted By Section */
+        .trusted-section {
+            padding: 2rem 0 4rem;
+            text-align: center;
+            border-bottom: 1px solid var(--color-gray-100);
+        }
+        
+        .logo-grid {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4rem;
+            flex-wrap: wrap;
+            opacity: 0.6;
+            margin-top: 2rem;
+        }
+        
+        .company-logo {
+            height: 30px;
+            filter: grayscale(100%);
+            transition: all 0.3s ease;
+        }
+        
+        .company-logo:hover {
+            filter: grayscale(0%);
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hero-title { font-size: 3rem; }
+            .hero-content { grid-template-columns: 1fr; gap: 3rem; text-align: center; }
+            .hero-text { margin: 0 auto; }
+            .hero-card { margin: 0 auto; transform: none; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 3rem; }
+            .testimonial-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            .hero-title { font-size: 2.5rem; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .landing-nav { padding: 1rem; }
+        }
+
+        /* Testimonials */
+        .testimonials {
+            padding: 8rem 2rem;
+            background: var(--color-white);
+        }
+
+        .testimonial-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .testimonial-card {
+            background: var(--color-gray-50);
+            padding: 2rem;
+            border-radius: 20px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .testimonial-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        .testimonial-quote {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--color-gray-700);
+            margin-bottom: 1.5rem;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .testimonial-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-600));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+        }
+
+        .testimonial-stars {
+            color: #fbbf24;
+            margin-bottom: 1rem;
+        }
+
+        /* FAQ Section */
+        .faq {
+            padding: 8rem 2rem;
+            background: #fafafa;
+        }
+
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+            border: 1px solid var(--color-gray-100);
+            transition: all 0.3s ease;
+        }
+
+        .faq-item:hover {
+            border-color: var(--color-primary-200);
+        }
+
+        .faq-question {
+            padding: 1.5rem 2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: var(--color-gray-900);
+        }
+
+        .faq-question svg {
+            transition: transform 0.3s ease;
+            color: var(--color-gray-400);
+        }
+
+        .faq-item.active .faq-question svg {
+            transform: rotate(180deg);
+            color: var(--color-primary-600);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 500px;
+        }
+
+        .faq-answer-content {
+            padding: 0 2rem 1.5rem;
+            color: var(--color-gray-600);
+            line-height: 1.7;
+        }
+
+        /* Scroll Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Floating CTA */
+        .floating-cta {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .floating-cta.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .floating-cta a {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            background: var(--color-primary-600);
+            color: white;
+            border-radius: 50px;
+            font-weight: 600;
+            box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .floating-cta a:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 30px -5px rgba(37, 99, 235, 0.5);
+        }
+
+        /* Enhanced Newsletter */
+        .newsletter-form {
+            display: flex;
+            gap: 1rem;
+            max-width: 500px;
+            margin: 2rem auto 0;
+        }
+
+        .newsletter-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: 2px solid var(--color-gray-200);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .newsletter-input:focus {
+            border-color: var(--color-primary-500);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Product Card Hover Effects */
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .product-card .btn {
+            transition: all 0.3s ease;
+        }
+        
+        .product-card:hover .btn {
+            background: var(--color-primary-700);
+        }
+    </style>
+</head>
+<body>
+    <!-- Messages Toast -->
+    {% if messages %}
+    <div style="position: fixed; top: 100px; right: 2rem; z-index: 2000; display: flex; flex-direction: column; gap: 1rem; pointer-events: none;">
+        {% for message in messages %}
+        <div style="background: white; padding: 1rem 1.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-left: 4px solid var(--color-primary-600); animation: slideInRight 0.5s ease-out forwards; pointer-events: auto; min-width: 300px;">
+            <div style="font-weight: 500; color: var(--color-gray-900);">{{ message }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    <style>
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+    {% endif %}
+
+    <!-- Navbar -->
+    <nav class="landing-nav">
+        <a href="/" class="landing-logo">ifinsure</a>
+        <div class="flex items-center gap-4">
+            <a href="{% url 'accounts:login' %}" class="btn btn-outline">Log In</a>
+            <a href="{% url 'accounts:register' %}" class="btn btn-primary">Get Started</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero" id="home">
+        <div class="hero-background">
+            <div class="gradient-orb orb-1"></div>
+            <div class="gradient-orb orb-2"></div>
+            <div class="gradient-orb orb-3"></div>
+        </div>
+        <div class="hero-content">
+            <div class="hero-text">
+                <span class="badge badge-primary mb-4" style="background: rgba(79, 70, 229, 0.1); color: var(--color-primary-600);">{{ settings.hero_badge_text }}</span>
+                <h1 class="hero-title">{{ settings.hero_title }}</h1>
+                <p class="hero-subtitle">
+                    {{ settings.hero_subtitle }}
+                </p>
+                <div class="flex gap-4 flex-wrap">
+                    <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg">{{ settings.hero_cta_primary_text }}</a>
+                    <a href="#features" class="btn btn-outline btn-lg">{{ settings.hero_cta_secondary_text }}</a>
+                </div>
+                <div class="mt-6 flex items-center gap-4 text-sm text-muted">
+                    <span class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-success"><path d="M20 6L9 17l-5-5"/></svg>
+                        {{ settings.hero_feature_1 }}
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-success"><path d="M20 6L9 17l-5-5"/></svg>
+                        {{ settings.hero_feature_2 }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="hero-visual">
+                <div class="hero-card">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <div class="text-sm text-muted">Total Active Coverage</div>
+                            <div class="text-2xl font-bold">{{ settings.demo_coverage_amount }}</div>
+                        </div>
+                        <div class="badge badge-success">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M20 6L9 17l-5-5"/></svg>
+                            Active
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span>Portfolio Growth</span>
+                            <span class="font-medium text-success">{{ settings.demo_growth_percentage }}</span>
+                        </div>
+                        <!-- SVG Chart -->
+                        <div style="height: 100px; width: 100%;">
+                            <svg width="100%" height="100%" viewBox="0 0 300 100" preserveAspectRatio="none">
+                                <path d="M0,80 C50,80 50,40 100,50 C150,60 150,20 200,30 C250,40 250,10 300,5" fill="none" stroke="var(--color-primary-500)" stroke-width="3" />
+                                <path d="M0,80 C50,80 50,40 100,50 C150,60 150,20 200,30 C250,40 250,10 300,5 V100 H0 Z" fill="url(#gradient)" opacity="0.2" />
+                                <defs>
+                                    <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="var(--color-primary-500)" />
+                                        <stop offset="100%" stop-color="white" stop-opacity="0" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div style="flex: 1; padding: 1rem; background: var(--color-gray-50); border-radius: 12px; display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 40px; height: 40px; background: #e0e7ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--color-primary-600);">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted">Policies</div>
+                                <div class="font-bold">{{ settings.demo_policies_count }}</div>
+                            </div>
+                        </div>
+                        <div style="flex: 1; padding: 1rem; background: var(--color-gray-50); border-radius: 12px; display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 40px; height: 40px; background: #dcfce7; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--color-success);">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted">Claims</div>
+                                <div class="font-bold">{{ settings.demo_claims_rate }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Floating Element -->
+                <div style="position: absolute; bottom: -20px; right: -20px; background: white; padding: 1rem; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); animation: float 6s infinite ease-in-out;">
+                    <div class="flex items-center gap-3">
+                        <div class="avatar bg-primary-100 text-primary-700">if</div>
+                        <div>
+                            <div class="text-sm font-bold">Policy Active</div>
+                            <div class="text-xs text-muted">Just now</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trusted By -->
+    <div class="trusted-section">
+        <p class="text-sm font-semibold uppercase tracking-wider text-muted">{{ settings.trusted_by_text }}</p>
+        <div class="logo-grid container">
+            {% for company in trusted_companies %}
+            {% if company.svg_code %}
+            {{ company.svg_code|safe }}
+            {% else %}
+            <svg class="company-logo" viewBox="0 0 100 30" width="120" height="40" fill="currentColor">
+                <text x="0" y="20" font-family="sans-serif" font-weight="900" font-size="16">{{ company.name }}</text>
+            </svg>
+            {% endif %}
+            {% empty %}
+            <!-- Fallback logos if none in database -->
+            <svg class="company-logo" viewBox="0 0 100 30" width="120" height="40" fill="currentColor">
+                <text x="0" y="20" font-family="sans-serif" font-weight="900" font-size="16">TechCorp</text>
+            </svg>
+            <svg class="company-logo" viewBox="0 0 100 30" width="120" height="40" fill="currentColor">
+                <text x="0" y="20" font-family="sans-serif" font-weight="900" font-size="16">FinHub</text>
+            </svg>
+            <svg class="company-logo" viewBox="0 0 100 30" width="120" height="40" fill="currentColor">
+                <text x="0" y="20" font-family="sans-serif" font-weight="900" font-size="16">GlobalCo</text>
+            </svg>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Features -->
+    <section id="features" class="features">
+        <div class="section-header">
+            <h2 class="section-title">{{ settings.features_title }}</h2>
+            <p class="text-lg text-muted">{{ settings.features_subtitle }}</p>
+        </div>
+        
+        <div class="feature-grid">
+            {% for feature in features %}
+            <div class="feature-card">
+                <div class="feature-icon">
+                    {% if feature.icon == 'lightning' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    {% elif feature.icon == 'grid' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    {% elif feature.icon == 'shield' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    {% elif feature.icon == 'clock' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    {% elif feature.icon == 'cube' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
+                    {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    {% endif %}
+                </div>
+                <h3>{{ feature.title }}</h3>
+                <p class="text-muted">{{ feature.description }}</p>
+            </div>
+            {% empty %}
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h3>No Features Configured</h3>
+                <p class="text-muted">Add features in the admin panel.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Process / How It Works -->
+    <section class="process" style="padding: 6rem 2rem; background: var(--color-white); border-bottom: 1px solid var(--color-gray-100);">
+        <div class="container text-center">
+            <h2 class="section-title">{{ settings.process_title }}</h2>
+            <div class="process-steps" style="display: flex; justify-content: center; gap: 4rem; margin-top: 4rem; flex-wrap: wrap;">
+                
+                <!-- Step 1 -->
+                <div style="flex: 1; min-width: 250px; max-width: 350px;">
+                    <div style="width: 60px; height: 60px; background: var(--color-primary-50); color: var(--color-primary-600); border-radius: 16px; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);">1</div>
+                    <h3 class="text-xl mb-2">{{ settings.process_step_1_title }}</h3>
+                    <p class="text-muted">{{ settings.process_step_1_description }}</p>
+                </div>
+                
+                <!-- Step 2 -->
+                 <div style="flex: 1; min-width: 250px; max-width: 350px;">
+                    <div style="width: 60px; height: 60px; background: var(--color-primary-50); color: var(--color-primary-600); border-radius: 16px; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);">2</div>
+                    <h3 class="text-xl mb-2">{{ settings.process_step_2_title }}</h3>
+                    <p class="text-muted">{{ settings.process_step_2_description }}</p>
+                </div>
+                
+                <!-- Step 3 -->
+                 <div style="flex: 1; min-width: 250px; max-width: 350px;">
+                    <div style="width: 60px; height: 60px; background: var(--color-primary-50); color: var(--color-primary-600); border-radius: 16px; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.1);">3</div>
+                    <h3 class="text-xl mb-2">{{ settings.process_step_3_title }}</h3>
+                    <p class="text-muted">{{ settings.process_step_3_description }}</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Marketplace -->
+    <section id="products" class="products-marketplace reveal" style="padding: 6rem 2rem; background: linear-gradient(180deg, var(--color-gray-50) 0%, var(--color-white) 100%);">
+        <div class="container">
+            <div class="section-header text-center">
+                <span class="badge badge-primary mb-3" style="background: rgba(79, 70, 229, 0.1); color: var(--color-primary-600);">Our Products</span>
+                <h2 class="section-title">Choose Your Protection</h2>
+                <p class="text-lg text-muted" style="max-width: 600px; margin: 0 auto;">Browse our comprehensive range of insurance products designed for modern businesses.</p>
+            </div>
+            
+            <div class="products-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; margin-top: 3rem;">
+                {% for product in products %}
+                <div class="product-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.05); transition: all 0.3s ease; border: 1px solid var(--color-gray-100);">
+                    <!-- Product Header with Category Badge -->
+                    <div style="padding: 1.5rem 1.5rem 1rem; border-bottom: 1px solid var(--color-gray-100);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                            <span class="product-category" style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.25rem 0.75rem; border-radius: 50px;
+                                {% if product.category == 'business' %}background: #dbeafe; color: #1d4ed8;
+                                {% elif product.category == 'health' %}background: #dcfce7; color: #15803d;
+                                {% elif product.category == 'auto' %}background: #fef3c7; color: #b45309;
+                                {% elif product.category == 'home' %}background: #fce7f3; color: #be185d;
+                                {% elif product.category == 'life' %}background: #e0e7ff; color: #4338ca;
+                                {% else %}background: #f3f4f6; color: #374151;{% endif %}
+                            ">{{ product.get_category_display }}</span>
+                            
+                            <!-- Product Icon based on category -->
+                            <div style="width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+                                {% if product.category == 'business' %}background: #dbeafe; color: #1d4ed8;
+                                {% elif product.category == 'health' %}background: #dcfce7; color: #15803d;
+                                {% elif product.category == 'auto' %}background: #fef3c7; color: #b45309;
+                                {% elif product.category == 'home' %}background: #fce7f3; color: #be185d;
+                                {% elif product.category == 'life' %}background: #e0e7ff; color: #4338ca;
+                                {% else %}background: #f3f4f6; color: #374151;{% endif %}
+                            ">
+                                {% if product.category == 'business' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                {% elif product.category == 'health' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                                {% elif product.category == 'auto' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>
+                                {% elif product.category == 'home' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                {% elif product.category == 'life' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                {% else %}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--color-gray-900); margin-bottom: 0.5rem;">{{ product.name }}</h3>
+                        <p style="font-size: 0.875rem; color: var(--color-gray-500); line-height: 1.5;">{{ product.short_description|default:product.description|truncatechars:100 }}</p>
+                    </div>
+                    
+                    <!-- Pricing Section -->
+                    <div style="padding: 1.25rem 1.5rem; background: var(--color-gray-50);">
+                        <div style="display: flex; align-items: baseline; gap: 0.25rem; margin-bottom: 0.5rem;">
+                            <span style="font-size: 0.875rem; color: var(--color-gray-500);">From</span>
+                            <span style="font-size: 1.75rem; font-weight: 800; color: var(--color-gray-900);">KES {{ product.base_premium|floatformat:0 }}</span>
+                            <span style="font-size: 0.875rem; color: var(--color-gray-500);">/month</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--color-gray-400);">
+                            Coverage up to KES {{ product.max_coverage|floatformat:0 }}
+                        </div>
+                    </div>
+                    
+                    <!-- Features List -->
+                    <div style="padding: 1.25rem 1.5rem;">
+                        <ul style="list-style: none; padding: 0; margin: 0 0 1.5rem 0;">
+                            {% for feature in product.features|slice:":4" %}
+                            <li style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; font-size: 0.875rem; color: var(--color-gray-600);">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-success); flex-shrink: 0;"><path d="M20 6L9 17l-5-5"/></svg>
+                                {{ feature }}
+                            </li>
+                            {% empty %}
+                            <li style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; font-size: 0.875rem; color: var(--color-gray-600);">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: var(--color-success);"><path d="M20 6L9 17l-5-5"/></svg>
+                                Comprehensive coverage
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; font-size: 0.875rem; color: var(--color-gray-600);">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: var(--color-success);"><path d="M20 6L9 17l-5-5"/></svg>
+                                24/7 claims support
+                            </li>
+                            <li style="display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0; font-size: 0.875rem; color: var(--color-gray-600);">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="color: var(--color-success);"><path d="M20 6L9 17l-5-5"/></svg>
+                                Flexible payment options
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        
+                        <a href="{% url 'policies:product_detail' product.pk %}" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                            Get Quote
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 8px;"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <!-- Placeholder cards when no products in database -->
+                <div class="product-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid var(--color-gray-100);">
+                    <div style="padding: 1.5rem;">
+                        <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; background: #dbeafe; color: #1d4ed8; padding: 0.25rem 0.75rem; border-radius: 50px;">Business</span>
+                        <h3 style="font-size: 1.25rem; font-weight: 700; margin: 1rem 0 0.5rem;">General Liability</h3>
+                        <p style="font-size: 0.875rem; color: var(--color-gray-500);">Protect your business from third-party claims.</p>
+                    </div>
+                    <div style="padding: 1.25rem 1.5rem; background: var(--color-gray-50);">
+                        <span style="font-size: 1.75rem; font-weight: 800;">KES 5,000</span><span style="color: var(--color-gray-500);">/month</span>
+                    </div>
+                    <div style="padding: 1.5rem;">
+                        <a href="{% url 'policies:products' %}" class="btn btn-primary" style="width: 100%; justify-content: center;">View Products</a>
+                    </div>
+                </div>
+                <div class="product-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid var(--color-gray-100);">
+                    <div style="padding: 1.5rem;">
+                        <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; background: #dcfce7; color: #15803d; padding: 0.25rem 0.75rem; border-radius: 50px;">Health</span>
+                        <h3 style="font-size: 1.25rem; font-weight: 700; margin: 1rem 0 0.5rem;">Group Health Cover</h3>
+                        <p style="font-size: 0.875rem; color: var(--color-gray-500);">Comprehensive health insurance for your team.</p>
+                    </div>
+                    <div style="padding: 1.25rem 1.5rem; background: var(--color-gray-50);">
+                        <span style="font-size: 1.75rem; font-weight: 800;">KES 3,500</span><span style="color: var(--color-gray-500);">/month</span>
+                    </div>
+                    <div style="padding: 1.5rem;">
+                        <a href="{% url 'policies:products' %}" class="btn btn-primary" style="width: 100%; justify-content: center;">View Products</a>
+                    </div>
+                </div>
+                <div class="product-card" style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid var(--color-gray-100);">
+                    <div style="padding: 1.5rem;">
+                        <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; background: #fef3c7; color: #b45309; padding: 0.25rem 0.75rem; border-radius: 50px;">Auto</span>
+                        <h3 style="font-size: 1.25rem; font-weight: 700; margin: 1rem 0 0.5rem;">Fleet Insurance</h3>
+                        <p style="font-size: 0.875rem; color: var(--color-gray-500);">Cover your business vehicles and drivers.</p>
+                    </div>
+                    <div style="padding: 1.25rem 1.5rem; background: var(--color-gray-50);">
+                        <span style="font-size: 1.75rem; font-weight: 800;">KES 8,000</span><span style="color: var(--color-gray-500);">/month</span>
+                    </div>
+                    <div style="padding: 1.5rem;">
+                        <a href="{% url 'policies:products' %}" class="btn btn-primary" style="width: 100%; justify-content: center;">View Products</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="text-center" style="margin-top: 3rem;">
+                <a href="{% url 'policies:products' %}" class="btn btn-outline btn-lg">
+                    View All Products
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 8px;"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+        <div class="stats-grid">
+            {% for stat in stats %}
+            <div>
+                <div class="stat-number" data-value="{{ stat.numeric_value }}" data-suffix="{{ stat.suffix }}" data-animated="{{ stat.is_animated }}">{{ stat.value }}</div>
+                <div class="stat-label">{{ stat.label }}</div>
+            </div>
+            {% empty %}
+            <div>
+                <div class="stat-number">2M+</div>
+                <div class="stat-label">Active Policies</div>
+            </div>
+            <div>
+                <div class="stat-number">98%</div>
+                <div class="stat-label">Claims Approved</div>
+            </div>
+            <div>
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">Support Available</div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials reveal">
+        <div class="section-header">
+            <h2 class="section-title">{{ settings.testimonials_title }}</h2>
+            <p class="text-lg text-muted">{{ settings.testimonials_subtitle }}</p>
+        </div>
+        
+        <div class="testimonial-grid">
+            {% for testimonial in testimonials %}
+            <div class="testimonial-card">
+                <div class="testimonial-stars">
+                    {% for i in "12345"|make_list %}
+                    {% if forloop.counter <= testimonial.rating %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <p class="testimonial-quote">"{{ testimonial.quote }}"</p>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">{{ testimonial.author_initials }}</div>
+                    <div>
+                        <div class="font-semibold">{{ testimonial.author_name }}</div>
+                        <div class="text-sm text-muted">{{ testimonial.author_title }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- User-submitted reviews (approved) -->
+            {% for review in user_reviews %}
+            <div class="testimonial-card">
+                <div class="testimonial-stars">
+                    {% for i in "12345"|make_list %}
+                    {% if forloop.counter <= review.rating %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <p class="testimonial-quote">"{{ review.quote }}"</p>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">{{ review.author_initials }}</div>
+                    <div>
+                        <div class="font-semibold">{{ review.author_name }}</div>
+                        <div class="text-sm text-muted">{{ review.author_title }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            {% if not testimonials and not user_reviews %}
+            <div class="testimonial-card">
+                <p class="testimonial-quote">"Be the first to share your experience with ifinsure!"</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="faq reveal">
+        <div class="section-header">
+            <h2 class="section-title">{{ settings.faq_title }}</h2>
+            <p class="text-lg text-muted">{{ settings.faq_subtitle }}</p>
+        </div>
+        
+        <div class="faq-container">
+            {% for faq in faqs %}
+            <div class="faq-item">
+                <div class="faq-question">
+                    {{ faq.question }}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+                <div class="faq-answer">
+                    <div class="faq-answer-content">{{ faq.answer }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="faq-item">
+                <div class="faq-question">
+                    No FAQs configured yet
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+                <div class="faq-answer">
+                    <div class="faq-answer-content">Add FAQs in the admin panel.</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta reveal">
+        <h2 class="section-title">{{ settings.cta_title }}</h2>
+        <p class="text-lg text-muted">{{ settings.cta_subtitle }}</p>
+        <form class="newsletter-form" onsubmit="event.preventDefault(); alert('Thank you! We will be in touch.');">
+            <input type="email" placeholder="Enter your business email" class="newsletter-input" required>
+            <button type="submit" class="btn btn-primary btn-lg">{{ settings.cta_button_text }}</button>
+        </form>
+        <p class="text-sm text-muted mt-4">{{ settings.cta_disclaimer }}</p>
+    </section>
+
+    <!-- Footer -->
+    <footer style="border-top: 1px solid var(--color-gray-200); padding: 4rem 2rem; background: var(--color-white);">
+        <div class="container">
+            <div class="flex flex-wrap justify-between gap-8">
+                <div style="max-width: 300px;">
+                    <a href="/" class="landing-logo mb-4" style="display: block;">ifinsure</a>
+                    <p class="text-sm text-muted">The modern insurance platform for forward-thinking businesses.</p>
+                </div>
+                <div class="flex gap-12 flex-wrap">
+                    <div>
+                        <h4 class="text-sm font-bold uppercase text-gray-400 mb-4">Product</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><a href="{% url 'policies:products' %}" class="text-sm text-gray-600 hover:text-primary-600">Coverage</a></li>
+                            <li><a href="{% url 'policies:apply' %}" class="text-sm text-gray-600 hover:text-primary-600">Get Quote</a></li>
+                            <li><a href="#faq" class="text-sm text-gray-600 hover:text-primary-600">FAQ</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold uppercase text-gray-400 mb-4">Company</h4>
+                        <ul style="list-style: none; padding: 0;">
+                            <li><a href="{% url 'core:sitemap' %}" class="text-sm text-gray-600 hover:text-primary-600">Sitemap</a></li>
+                            <li><a href="{% url 'accounts:login' %}" class="text-sm text-gray-600 hover:text-primary-600">Sign In</a></li>
+                            <li><a href="{% url 'accounts:register' %}" class="text-sm text-gray-600 hover:text-primary-600">Join Us</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-gray-100 text-center text-sm text-muted">
+                &copy; {% now "Y" %} ifinsure. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating CTA -->
+    <div class="floating-cta" id="floatingCta">
+        <a href="{% url 'accounts:register' %}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            {{ settings.floating_cta_text }}
+        </a>
+    </div>
+
+    <script>
+        // Parallax Effect for Hero Card
+        document.addEventListener('mousemove', (e) => {
+            const card = document.querySelector('.hero-card');
+            if (!card) return;
+
+            const x = (window.innerWidth / 2 - e.pageX) / 25;
+            const y = (window.innerHeight / 2 - e.pageY) / 25;
+
+            card.style.transform = `perspective(1000px) rotateY(${x}deg) rotateX(${y}deg)`;
+        });
+
+        // Reset on mouse leave
+        document.addEventListener('mouseleave', () => {
+            const card = document.querySelector('.hero-card');
+            if (card) {
+                card.style.transform = 'perspective(1000px) rotateY(-5deg) rotateX(5deg)';
+            }
+        });
+
+        // FAQ Accordion
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', () => {
+                const item = question.parentElement;
+                const wasActive = item.classList.contains('active');
+                
+                // Close all items
+                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
+                
+                // Toggle current item
+                if (!wasActive) {
+                    item.classList.add('active');
+                }
+            });
+        });
+
+        // Scroll Reveal
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealOnScroll = () => {
+            revealElements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                const windowHeight = window.innerHeight;
+                
+                if (rect.top < windowHeight - 100) {
+                    el.classList.add('visible');
+                }
+            });
+        };
+        window.addEventListener('scroll', revealOnScroll);
+        revealOnScroll(); // Initial check
+
+        // Floating CTA visibility
+        const floatingCta = document.getElementById('floatingCta');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 500) {
+                floatingCta.classList.add('visible');
+            } else {
+                floatingCta.classList.remove('visible');
+            }
+        });
+
+        // Animated Counters
+        const animateValue = (element, start, end, duration, suffix = '') => {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                element.textContent = value.toLocaleString() + suffix;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        };
+
+        // Observe stats section
+        const statsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const stats = entry.target.querySelectorAll('.stat-number');
+                    stats.forEach(stat => {
+                        const text = stat.textContent;
+                        if (text.includes('M')) {
+                            animateValue(stat, 0, 2, 2000, 'M+');
+                        } else if (text.includes('%')) {
+                            animateValue(stat, 0, 98, 2000, '%');
+                        } else if (text.includes('24')) {
+                            stat.textContent = '24/7';
+                        } else if (text.includes('m')) {
+                            animateValue(stat, 0, 15, 2000, 'm');
+                        }
+                    });
+                    statsObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        const statsSection = document.querySelector('.stats');
+        if (statsSection) statsObserver.observe(statsSection);
+    </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Edit Claim - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumbs">
+        <a href="{% url 'claims:list' %}">My Claims</a>
+        <span>/</span>
+        <a href="{% url 'claims:detail' claim.pk %}">{{ claim.claim_number }}</a>
+        <span>/</span>
+        <span>Edit</span>
+    </div>
+    <h1>Edit Claim</h1>
+    <p>Update your claim information</p>
+</div>
+
+<div class="grid grid-3 gap-6">
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+            <h4>Claim Details</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="form-section">
+                    <h5>Incident Information</h5>
+                    
+                    <div class="grid grid-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Incident Date *</label>
+                            {{ form.incident_date }}
+                            {% if form.incident_date.errors %}
+                            <span class="form-error">{{ form.incident_date.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Incident Location</label>
+                            {{ form.incident_location }}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Incident Description *</label>
+                        {{ form.incident_description }}
+                        <span class="form-hint">Provide detailed information about what happened</span>
+                        {% if form.incident_description.errors %}
+                        <span class="form-error">{{ form.incident_description.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h5>Claim Amount</h5>
+                    
+                    <div class="grid grid-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label">Amount Claimed (KES) *</label>
+                            {{ form.claimed_amount }}
+                            <span class="form-hint">Maximum coverage: KES {{ claim.policy.coverage_amount|intcomma }}</span>
+                            {% if form.claimed_amount.errors %}
+                            <span class="form-error">{{ form.claimed_amount.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            {{ form.priority }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button type="submit" class="btn btn-primary">Update Claim</button>
+                    <a href="{% url 'claims:detail' claim.pk %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Claim Status</h4>
+            </div>
+            <div class="card-body">
+                <div class="status-badge mb-4">
+                    <span class="badge badge-{% if claim.status == 'draft' %}secondary{% elif claim.status == 'submitted' %}info{% else %}warning{% endif %} badge-lg">
+                        {{ claim.get_status_display }}
+                    </span>
+                </div>
+                
+                {% if claim.status != 'draft' %}
+                <div class="alert alert-warning">
+                    <strong>Note:</strong> Some fields may not be editable after submission.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h4>Policy Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="info-list">
+                    <div class="info-item">
+                        <span class="info-label">Policy</span>
+                        <span class="info-value">{{ claim.policy.policy_number }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Product</span>
+                        <span class="info-value">{{ claim.policy.product.name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Coverage</span>
+                        <span class="info-value">KES {{ claim.policy.coverage_amount|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-section {
+    margin-bottom: var(--spacing-6);
+    padding-bottom: var(--spacing-6);
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.form-section:last-of-type {
+    border-bottom: none;
+}
+
+.form-section h5 {
+    margin: 0 0 var(--spacing-4);
+    color: var(--color-gray-700);
+}
+
+.info-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3);
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+.info-label {
+    color: var(--color-gray-500);
+}
+
+.info-value {
+    font-weight: 500;
+}
+</style>
+{% endblock %}

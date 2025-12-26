@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ application.application_number }} - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumbs">
+        <a href="{% url 'policies:applications' %}">Applications</a>
+        <span>/</span>
+        <span>{{ application.application_number }}</span>
+    </div>
+    <h1>{{ application.application_number }}</h1>
+    <p>{{ application.product.name }}</p>
+</div>
+
+<div class="grid grid-3 gap-6">
+    <!-- Application Info -->
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header flex justify-between items-center">
+            <h4>Application Details</h4>
+            <span class="badge badge-{% if application.status == 'approved' %}success{% elif application.status == 'rejected' %}danger{% elif application.status == 'submitted' or application.status == 'under_review' %}warning{% else %}default{% endif %} badge-lg">
+                {{ application.get_status_display }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="profile-grid">
+                <div class="profile-item">
+                    <span class="profile-label">Application Number</span>
+                    <span class="profile-value">{{ application.application_number }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Product</span>
+                    <span class="profile-value">{{ application.product.name }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Requested Coverage</span>
+                    <span class="profile-value">KES {{ application.requested_coverage|intcomma }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Term</span>
+                    <span class="profile-value">{{ application.requested_term_months }} months</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Payment Frequency</span>
+                    <span class="profile-value">{{ application.get_payment_frequency_display }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Calculated Premium</span>
+                    <span class="profile-value">
+                        {% if application.calculated_premium %}
+                        KES {{ application.calculated_premium|intcomma }}
+                        {% else %}
+                        <span class="text-muted">Pending calculation</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Submitted</span>
+                    <span class="profile-value">{{ application.submitted_at|date:"M d, Y H:i"|default:"Not submitted" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Created</span>
+                    <span class="profile-value">{{ application.created_at|date:"M d, Y" }}</span>
+                </div>
+            </div>
+            
+            {% if application.beneficiary_name %}
+            <hr style="margin: var(--spacing-4) 0; border: none; border-top: 1px solid var(--color-gray-200);">
+            <h5>Beneficiary</h5>
+            <div class="profile-grid">
+                <div class="profile-item">
+                    <span class="profile-label">Name</span>
+                    <span class="profile-value">{{ application.beneficiary_name }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Relationship</span>
+                    <span class="profile-value">{{ application.beneficiary_relationship|default:"-" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Phone</span>
+                    <span class="profile-value">{{ application.beneficiary_phone|default:"-" }}</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if application.rejection_reason %}
+            <div class="alert alert-danger mt-4">
+                <strong>Rejection Reason:</strong> {{ application.rejection_reason }}
+            </div>
+            {% endif %}
+            
+            {% if application.policy %}
+            <div class="alert alert-success mt-4">
+                <strong>Application Approved!</strong> 
+                Your policy number is <a href="{% url 'policies:detail' application.policy.pk %}">{{ application.policy.policy_number }}</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h4>Actions</h4>
+        </div>
+        <div class="card-body">
+            {% if application.status == 'draft' %}
+            <form method="post" class="mb-4">
+                {% csrf_token %}
+                <button type="submit" name="submit" class="btn btn-primary btn-block">
+                    Submit Application
+                </button>
+            </form>
+            <p class="text-sm text-muted">
+                Review your application details before submitting.
+            </p>
+            {% elif application.status == 'submitted' %}
+            <p class="text-sm text-muted">
+                Your application is being reviewed. We'll notify you once a decision is made.
+            </p>
+            {% elif application.status == 'approved' and application.policy %}
+            <a href="{% url 'policies:detail' application.policy.pk %}" class="btn btn-primary btn-block">
+                View Policy
+            </a>
+            {% elif application.status == 'rejected' %}
+            <a href="{% url 'policies:products' %}" class="btn btn-primary btn-block">
+                Apply Again
+            </a>
+            {% endif %}
+        </div>
+        
+        {% if application.assigned_agent %}
+        <div class="card-footer">
+            <span class="text-sm text-muted">Assigned Agent</span>
+            <div class="flex items-center gap-3 mt-2">
+                <div class="avatar avatar-sm">{{ application.assigned_agent.initials }}</div>
+                <div>
+                    <div class="font-medium">{{ application.assigned_agent.get_full_name }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-4);
+}
+
+.profile-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.profile-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.profile-value {
+    font-size: var(--font-size-base);
+    color: var(--color-gray-900);
+}
+</style>
+{% endblock %}

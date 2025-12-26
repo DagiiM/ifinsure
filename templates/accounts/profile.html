@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>My Profile</h1>
+    <p>View and manage your account information</p>
+</div>
+
+<div class="grid grid-3 gap-6">
+    <!-- Profile Overview -->
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header flex justify-between items-center">
+            <h4>Personal Information</h4>
+            <a href="{% url 'accounts:profile_edit' %}" class="btn btn-secondary btn-sm">Edit</a>
+        </div>
+        <div class="card-body">
+            <div class="profile-grid">
+                <div class="profile-item">
+                    <span class="profile-label">Full Name</span>
+                    <span class="profile-value">{{ user.get_full_name }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Email</span>
+                    <span class="profile-value">{{ user.email }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Phone</span>
+                    <span class="profile-value">{{ user.phone|default:"-" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Date of Birth</span>
+                    <span class="profile-value">{{ user.date_of_birth|default:"-" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Address</span>
+                    <span class="profile-value">{{ user.address|default:"-" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">City</span>
+                    <span class="profile-value">{{ user.city|default:"-" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Account Info -->
+    <div class="card">
+        <div class="card-header">
+            <h4>Account</h4>
+        </div>
+        <div class="card-body">
+            <div class="profile-item mb-4">
+                <span class="profile-label">Account Type</span>
+                <span class="profile-value">
+                    <span class="badge badge-primary">{{ user.get_user_type_display }}</span>
+                </span>
+            </div>
+            <div class="profile-item mb-4">
+                <span class="profile-label">Member Since</span>
+                <span class="profile-value">{{ user.date_joined|date:"M d, Y" }}</span>
+            </div>
+            <div class="profile-item">
+                <span class="profile-label">Last Login</span>
+                <span class="profile-value">{{ user.last_login|date:"M d, Y H:i"|default:"Never" }}</span>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'accounts:password_change' %}" class="btn btn-secondary btn-sm btn-block">
+                Change Password
+            </a>
+        </div>
+    </div>
+    
+    <!-- Extended Profile -->
+    <div class="card" style="grid-column: span 3;">
+        <div class="card-header">
+            <h4>Additional Information</h4>
+        </div>
+        <div class="card-body">
+            <div class="profile-grid">
+                <div class="profile-item">
+                    <span class="profile-label">ID Type</span>
+                    <span class="profile-value">{{ profile.get_id_type_display|default:"-" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">ID Number</span>
+                    <span class="profile-value">{{ profile.id_number|default:"-" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Occupation</span>
+                    <span class="profile-value">{{ profile.occupation|default:"-" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Employer</span>
+                    <span class="profile-value">{{ profile.employer|default:"-" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Emergency Contact</span>
+                    <span class="profile-value">{{ profile.emergency_contact_name|default:"-" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Emergency Phone</span>
+                    <span class="profile-value">{{ profile.emergency_contact_phone|default:"-" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-4);
+}
+
+.profile-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.profile-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.profile-value {
+    font-size: var(--font-size-base);
+    color: var(--color-gray-900);
+}
+</style>
+{% endblock %}

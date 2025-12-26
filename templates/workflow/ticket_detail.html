@@ -1,0 +1,668 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ ticket.reference }} - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'workflow:agent_dashboard' %}">Dashboard</a>
+            <span>›</span>
+            <span>{{ ticket.reference }}</span>
+        </nav>
+        <h1 class="page-title">{{ ticket.subject }}</h1>
+        <div class="ticket-header-meta">
+            <span class="priority-badge priority-{{ ticket.priority }}">{{ ticket.get_priority_display }}</span>
+            <span class="status-badge status-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+            <span class="type-badge">{{ ticket.get_ticket_type_display }}</span>
+            {% if ticket.is_overdue %}
+            <span class="overdue-badge">⚠ OVERDUE</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="ticket-layout">
+    <!-- Main Content -->
+    <div class="ticket-main">
+        <!-- Description -->
+        <div class="ticket-section">
+            <h3>Description</h3>
+            <div class="ticket-description">
+                {{ ticket.description|default:"No description provided"|linebreaks }}
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="ticket-actions-bar">
+            {% if can_pick %}
+            <form action="{% url 'workflow:pick_ticket' reference=ticket.reference %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Pick This Ticket
+                </button>
+            </form>
+            {% endif %}
+            
+            {% if ticket.assigned_to == agent %}
+            <form action="{% url 'workflow:resolve_ticket' reference=ticket.reference %}" method="post" class="resolve-form">
+                {% csrf_token %}
+                <input type="hidden" name="resolution_notes" id="resolution_notes" value="">
+                <button type="button" class="btn btn-success" onclick="openResolveModal()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Resolve
+                </button>
+            </form>
+            
+            <form action="{% url 'workflow:escalate_ticket' reference=ticket.reference %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="escalation_reason" value="Agent escalation">
+                <button type="submit" class="btn btn-outline btn-warning">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                    </svg>
+                    Escalate
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        
+        <!-- Add Note -->
+        <div class="ticket-section">
+            <h3>Add Note</h3>
+            <form action="{% url 'workflow:add_note' reference=ticket.reference %}" method="post" class="note-form">
+                {% csrf_token %}
+                <textarea name="note" rows="3" placeholder="Add a note or update..." required></textarea>
+                <button type="submit" class="btn btn-primary btn-sm">Add Note</button>
+            </form>
+        </div>
+        
+        <!-- Activity Timeline -->
+        <div class="ticket-section">
+            <h3>Activity Timeline</h3>
+            <div class="timeline">
+                {% for activity in activities %}
+                <div class="timeline-item">
+                    <div class="timeline-marker {{ activity.activity_type }}"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <span class="timeline-action">{{ activity.get_activity_type_display }}</span>
+                            <span class="timeline-time">{{ activity.created_at|date:"M d, Y g:i A" }}</span>
+                        </div>
+                        {% if activity.performed_by %}
+                        <span class="timeline-user">by {{ activity.performed_by.get_full_name|default:activity.performed_by.email }}</span>
+                        {% endif %}
+                        {% if activity.note %}
+                        <p class="timeline-note">{{ activity.note }}</p>
+                        {% endif %}
+                        {% if activity.details %}
+                        <div class="timeline-details">
+                            {% for key, value in activity.details.items %}
+                            <span class="detail-chip">{{ key }}: {{ value }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="empty-text">No activity yet</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="ticket-sidebar">
+        <!-- Info Card -->
+        <div class="sidebar-card">
+            <h4>Ticket Details</h4>
+            <div class="detail-list">
+                <div class="detail-row">
+                    <span class="detail-label">Reference</span>
+                    <span class="detail-value">{{ ticket.reference }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Type</span>
+                    <span class="detail-value">{{ ticket.get_ticket_type_display }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Priority</span>
+                    <span class="detail-value priority-{{ ticket.priority }}">{{ ticket.get_priority_display }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value">{{ ticket.get_status_display }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Required Level</span>
+                    <span class="detail-value">L{{ ticket.required_workclass_level }}</span>
+                </div>
+                {% if ticket.estimated_amount > 0 %}
+                <div class="detail-row">
+                    <span class="detail-label">Amount</span>
+                    <span class="detail-value">KES {{ ticket.estimated_amount|floatformat:0|intcomma }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- SLA Card -->
+        <div class="sidebar-card {% if ticket.is_overdue %}alert{% endif %}">
+            <h4>SLA</h4>
+            <div class="sla-info">
+                {% if ticket.sla_due_at %}
+                <div class="sla-time">
+                    {% if ticket.is_overdue %}
+                    <span class="sla-overdue">OVERDUE</span>
+                    <span class="sla-due">Due: {{ ticket.sla_due_at|date:"M d, g:i A" }}</span>
+                    {% else %}
+                    <span class="sla-remaining">
+                        {% with hours=ticket.time_to_sla.total_seconds|divisibleby:3600 %}
+                        {{ hours }}h remaining
+                        {% endwith %}
+                    </span>
+                    <span class="sla-due">Due: {{ ticket.sla_due_at|date:"M d, g:i A" }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Assignment Card -->
+        <div class="sidebar-card">
+            <h4>Assignment</h4>
+            <div class="detail-list">
+                <div class="detail-row">
+                    <span class="detail-label">Assigned To</span>
+                    <span class="detail-value">
+                        {% if ticket.assigned_to %}
+                        {{ ticket.assigned_to.user.get_full_name|default:ticket.assigned_to.user.email }}
+                        {% else %}
+                        <em>Unassigned</em>
+                        {% endif %}
+                    </span>
+                </div>
+                {% if ticket.assigned_at %}
+                <div class="detail-row">
+                    <span class="detail-label">Assigned At</span>
+                    <span class="detail-value">{{ ticket.assigned_at|date:"M d, g:i A" }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Customer Card -->
+        {% if ticket.customer %}
+        <div class="sidebar-card">
+            <h4>Customer</h4>
+            <div class="customer-info">
+                <div class="customer-avatar">
+                    {{ ticket.customer.first_name|slice:":1"|default:ticket.customer.email|slice:":1"|upper }}
+                </div>
+                <div class="customer-details">
+                    <span class="customer-name">{{ ticket.customer.get_full_name|default:ticket.customer.email }}</span>
+                    <span class="customer-email">{{ ticket.customer.email }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Timestamps Card -->
+        <div class="sidebar-card">
+            <h4>Timestamps</h4>
+            <div class="detail-list">
+                <div class="detail-row">
+                    <span class="detail-label">Created</span>
+                    <span class="detail-value">{{ ticket.created_at|date:"M d, Y g:i A" }}</span>
+                </div>
+                {% if ticket.first_response_at %}
+                <div class="detail-row">
+                    <span class="detail-label">First Response</span>
+                    <span class="detail-value">{{ ticket.first_response_at|date:"M d, g:i A" }}</span>
+                </div>
+                {% endif %}
+                {% if ticket.resolved_at %}
+                <div class="detail-row">
+                    <span class="detail-label">Resolved</span>
+                    <span class="detail-value">{{ ticket.resolved_at|date:"M d, g:i A" }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resolve Modal -->
+<div class="modal-overlay" id="resolveModal" style="display: none;">
+    <div class="modal-content">
+        <h3>Resolve Ticket</h3>
+        <p>Add resolution notes for ticket {{ ticket.reference }}</p>
+        <textarea id="resolveNotes" rows="4" placeholder="Describe how the issue was resolved..."></textarea>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-outline" onclick="closeResolveModal()">Cancel</button>
+            <button type="button" class="btn btn-success" onclick="submitResolve()">Resolve Ticket</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.ticket-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .ticket-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.ticket-header-meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.priority-badge, .status-badge, .type-badge, .overdue-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    text-transform: uppercase;
+}
+
+.priority-low { background: #e5e7eb; color: #4b5563; }
+.priority-medium { background: #dbeafe; color: #1e40af; }
+.priority-high { background: #fef3c7; color: #92400e; }
+.priority-urgent { background: #fee2e2; color: #991b1b; }
+
+.status-open { background: #dbeafe; color: #1e40af; }
+.status-assigned { background: #e0e7ff; color: #4338ca; }
+.status-in_progress { background: #fef3c7; color: #92400e; }
+.status-resolved { background: #dcfce7; color: #166534; }
+.status-closed { background: #e5e7eb; color: #374151; }
+.status-escalated { background: #fee2e2; color: #991b1b; }
+
+.type-badge {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.overdue-badge {
+    background: #dc2626;
+    color: white;
+}
+
+/* Main */
+.ticket-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.ticket-section {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.ticket-section h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: 1rem;
+}
+
+.ticket-description {
+    color: var(--color-gray-700);
+    line-height: 1.6;
+}
+
+.ticket-actions-bar {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn-success {
+    background: #22c55e;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #16a34a;
+}
+
+.btn-warning {
+    color: #d97706;
+    border-color: #d97706;
+}
+
+.btn-warning:hover {
+    background: #fef3c7;
+}
+
+/* Note form */
+.note-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.note-form textarea {
+    padding: 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.note-form textarea:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Timeline */
+.timeline {
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-gray-200);
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+.timeline-item:last-child {
+    padding-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1.5rem;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-gray-300);
+    border: 2px solid white;
+}
+
+.timeline-marker.created { background: #60a5fa; }
+.timeline-marker.assigned, .timeline-marker.picked { background: #818cf8; }
+.timeline-marker.resolved { background: #22c55e; }
+.timeline-marker.escalated { background: #ef4444; }
+.timeline-marker.note { background: #f59e0b; }
+.timeline-marker.status_change { background: #8b5cf6; }
+
+.timeline-content {
+    background: var(--color-gray-50);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.timeline-action {
+    font-weight: 600;
+    color: var(--color-gray-900);
+    font-size: 0.875rem;
+}
+
+.timeline-time {
+    font-size: 0.75rem;
+    color: var(--color-gray-400);
+}
+
+.timeline-user {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.timeline-note {
+    margin: 0.5rem 0 0 0;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+}
+
+.timeline-details {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.detail-chip {
+    font-size: 0.7rem;
+    padding: 0.125rem 0.5rem;
+    background: var(--color-gray-200);
+    border-radius: 4px;
+    color: var(--color-gray-600);
+}
+
+/* Sidebar */
+.ticket-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sidebar-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.sidebar-card.alert {
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+}
+
+.sidebar-card h4 {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.detail-label {
+    color: var(--color-gray-500);
+    font-size: 0.8rem;
+}
+
+.detail-value {
+    font-weight: 500;
+    color: var(--color-gray-900);
+    font-size: 0.875rem;
+}
+
+/* SLA */
+.sla-info {
+    text-align: center;
+}
+
+.sla-remaining {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+}
+
+.sla-overdue {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #dc2626;
+}
+
+.sla-due {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    margin-top: 0.25rem;
+}
+
+/* Customer */
+.customer-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.customer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.customer-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.customer-name {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.customer-email {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-content h3 {
+    margin: 0 0 0.5rem 0;
+}
+
+.modal-content p {
+    color: var(--color-gray-500);
+    margin-bottom: 1rem;
+}
+
+.modal-content textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    resize: vertical;
+    margin-bottom: 1rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-600);
+}
+
+.breadcrumb span {
+    color: var(--color-gray-400);
+}
+
+.empty-text {
+    text-align: center;
+    color: var(--color-gray-400);
+    font-style: italic;
+}
+</style>
+
+<script>
+function openResolveModal() {
+    document.getElementById('resolveModal').style.display = 'flex';
+}
+
+function closeResolveModal() {
+    document.getElementById('resolveModal').style.display = 'none';
+}
+
+function submitResolve() {
+    const notes = document.getElementById('resolveNotes').value;
+    document.getElementById('resolution_notes').value = notes;
+    document.querySelector('.resolve-form').submit();
+}
+</script>
+{% endblock %}

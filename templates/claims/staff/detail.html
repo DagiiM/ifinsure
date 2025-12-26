@@ -1,0 +1,432 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Claim {{ claim.claim_number }} - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumbs">
+        <a href="{% url 'claims:staff_list' %}">Claims</a>
+        <span>/</span>
+        <span>{{ claim.claim_number }}</span>
+    </div>
+    <div class="flex justify-between items-start">
+        <div>
+            <h1>Claim {{ claim.claim_number }}</h1>
+            <p>Filed {{ claim.created_at|date:"M d, Y" }}</p>
+        </div>
+        <span class="badge badge-{% if claim.status == 'approved' or claim.status == 'paid' %}success{% elif claim.status == 'submitted' %}info{% elif claim.status == 'under_review' %}warning{% elif claim.status == 'rejected' %}danger{% else %}default{% endif %} badge-lg">
+            {{ claim.get_status_display }}
+        </span>
+    </div>
+</div>
+
+<div class="grid grid-3 gap-6">
+    <!-- Claim Details -->
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+            <h4>Claim Details</h4>
+        </div>
+        <div class="card-body">
+            <div class="profile-grid mb-6">
+                <div class="profile-item">
+                    <span class="profile-label">Claimant</span>
+                    <span class="profile-value">{{ claim.claimant.get_full_name }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Email</span>
+                    <span class="profile-value">{{ claim.claimant.email }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Phone</span>
+                    <span class="profile-value">{{ claim.claimant.phone|default:"-" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Policy</span>
+                    <span class="profile-value">
+                        <a href="{% url 'policies:detail' claim.policy.pk %}">{{ claim.policy.policy_number }}</a>
+                    </span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Product</span>
+                    <span class="profile-value">{{ claim.policy.product.name }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Priority</span>
+                    <span class="profile-value">
+                        <span class="badge badge-{% if claim.priority == 'urgent' %}danger{% elif claim.priority == 'high' %}warning{% else %}default{% endif %}">
+                            {{ claim.get_priority_display }}
+                        </span>
+                    </span>
+                </div>
+            </div>
+            
+            <h5>Incident Details</h5>
+            <div class="profile-grid mb-6">
+                <div class="profile-item">
+                    <span class="profile-label">Incident Date</span>
+                    <span class="profile-value">{{ claim.incident_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Location</span>
+                    <span class="profile-value">{{ claim.incident_location|default:"-" }}</span>
+                </div>
+            </div>
+            <div class="incident-description">
+                <p>{{ claim.incident_description }}</p>
+            </div>
+            
+            <h5 class="mt-6">Financial Summary</h5>
+            <div class="financial-summary">
+                <div class="financial-row">
+                    <span>Policy Coverage</span>
+                    <span>KES {{ claim.policy.coverage_amount|intcomma }}</span>
+                </div>
+                <div class="financial-row">
+                    <span>Amount Claimed</span>
+                    <span class="font-bold">KES {{ claim.claimed_amount|intcomma }}</span>
+                </div>
+                {% if claim.approved_amount %}
+                <div class="financial-row text-success">
+                    <span>Amount Approved</span>
+                    <span>KES {{ claim.approved_amount|intcomma }}</span>
+                </div>
+                {% endif %}
+                {% if claim.paid_amount %}
+                <div class="financial-row text-success">
+                    <span>Amount Paid</span>
+                    <span>KES {{ claim.paid_amount|intcomma }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Panel -->
+    <div>
+        <!-- Review Form -->
+        {% if claim.status in 'submitted,under_review' %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Review Decision</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label class="form-label">Action</label>
+                        {% for radio in review_form.action %}
+                        <div class="form-check mb-2">
+                            {{ radio.tag }}
+                            <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="form-group" id="approvedAmountGroup" style="display: none;">
+                        <label class="form-label">Approved Amount</label>
+                        {{ review_form.approved_amount }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Notes / Reason</label>
+                        {{ review_form.notes }}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-block">Submit Decision</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if claim.status == 'approved' %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Process Payment</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="pay">
+                    <p class="text-muted mb-4">Approved amount: <strong>KES {{ claim.approved_amount|intcomma }}</strong></p>
+                    <button type="submit" class="btn btn-success btn-block" onclick="return confirm('Mark this claim as paid?')">
+                        Mark as Paid
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Assigned Adjuster -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Assignment</h4>
+            </div>
+            <div class="card-body">
+                {% if claim.assigned_adjuster %}
+                <p>Assigned to: <strong>{{ claim.assigned_adjuster.get_full_name }}</strong></p>
+                {% else %}
+                <p class="text-muted">No adjuster assigned</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h4>Quick Actions</h4>
+            </div>
+            <div class="card-body">
+                <div class="flex flex-col gap-2">
+                    <a href="{% url 'policies:detail' claim.policy.pk %}" class="btn btn-secondary btn-block">View Policy</a>
+                    <button onclick="document.getElementById('addNoteModal').style.display='flex'" class="btn btn-secondary btn-block">Add Note</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Documents -->
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+            <h4>Supporting Documents</h4>
+        </div>
+        <div class="card-body p-0">
+            {% if documents %}
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Document</th>
+                            <th>Type</th>
+                            <th>Uploaded</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in documents %}
+                        <tr>
+                            <td class="font-medium">{{ doc.title }}</td>
+                            <td>{{ doc.get_document_type_display }}</td>
+                            <td>{{ doc.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{{ doc.file.url }}" target="_blank" class="btn btn-secondary btn-sm">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state py-6">
+                <p class="text-muted">No documents attached</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Notes & History -->
+    <div class="card">
+        <div class="card-header">
+            <h4>Notes & History</h4>
+        </div>
+        <div class="card-body">
+            {% if notes %}
+            <div class="notes-list">
+                {% for note in notes %}
+                <div class="note-item {% if note.is_internal %}internal{% endif %}">
+                    <div class="note-header">
+                        <span class="note-author">{{ note.author.get_full_name }}</span>
+                        <span class="note-date">{{ note.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    <p class="note-content">{{ note.content }}</p>
+                    {% if note.is_internal %}
+                    <span class="badge badge-warning">Internal</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center">No notes yet</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Status History -->
+    <div class="card" style="grid-column: span 3;">
+        <div class="card-header">
+            <h4>Status History</h4>
+        </div>
+        <div class="card-body p-0">
+            {% if status_history %}
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Changed By</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for history in status_history %}
+                        <tr>
+                            <td>{{ history.changed_at|date:"M d, Y H:i" }}</td>
+                            <td><span class="badge badge-secondary">{{ history.from_status|default:"New" }}</span></td>
+                            <td><span class="badge badge-primary">{{ history.to_status }}</span></td>
+                            <td>{{ history.changed_by.get_full_name|default:"System" }}</td>
+                            <td>{{ history.notes|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state py-6">
+                <p class="text-muted">No status changes recorded</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Note Modal -->
+<div id="addNoteModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add Note</h3>
+            <button onclick="document.getElementById('addNoteModal').style.display='none'" class="modal-close">&times;</button>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_note">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Note</label>
+                    {{ note_form.content }}
+                </div>
+                <div class="form-group">
+                    <label class="form-check">
+                        {{ note_form.is_internal }}
+                        <span>Internal note (not visible to customer)</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="document.getElementById('addNoteModal').style.display='none'" class="btn btn-secondary">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Note</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-4);
+}
+
+.profile-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.profile-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.profile-value {
+    font-size: var(--font-size-base);
+    color: var(--color-gray-900);
+}
+
+.incident-description {
+    background: var(--color-gray-50);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid var(--color-primary-500);
+}
+
+.financial-summary {
+    background: var(--color-gray-50);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+}
+
+.financial-row {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--spacing-2) 0;
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.financial-row:last-child {
+    border-bottom: none;
+}
+
+.notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+}
+
+.note-item {
+    padding: var(--spacing-3);
+    background: var(--color-gray-50);
+    border-radius: var(--radius-md);
+}
+
+.note-item.internal {
+    background: var(--color-warning-50);
+    border-left: 3px solid var(--color-warning-500);
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-2);
+}
+
+.note-author {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+}
+
+.note-date {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+}
+
+.note-content {
+    margin: 0;
+    font-size: var(--font-size-sm);
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-3);
+    padding: var(--spacing-4) var(--spacing-6);
+    border-top: 1px solid var(--color-gray-200);
+}
+</style>
+
+<script>
+// Show/hide approved amount field based on action selection
+document.querySelectorAll('input[name="action"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const approvedAmountGroup = document.getElementById('approvedAmountGroup');
+        if (approvedAmountGroup) {
+            approvedAmountGroup.style.display = this.value === 'approve' ? 'block' : 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

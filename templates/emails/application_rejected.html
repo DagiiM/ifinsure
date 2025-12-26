@@ -1,0 +1,71 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}Application Update - ifinsure{% endblock %}
+
+{% block content %}
+<p class="email-greeting">Application Status Update</p>
+
+<p class="email-text">
+    Dear {{ user.first_name }},
+</p>
+
+<p class="email-text">
+    We have reviewed your insurance application and unfortunately, we are unable to proceed with approval at this time.
+</p>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Application Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Application Number</span>
+        <span class="highlight-value">{{ application.application_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Product</span>
+        <span class="highlight-value">{{ application.product.name }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Submitted On</span>
+        <span class="highlight-value">{{ application.created_at|date:"F d, Y" }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Status</span>
+        <span class="highlight-value">
+            <span class="status-badge status-danger">Not Approved</span>
+        </span>
+    </div>
+</div>
+
+{% if rejection_reason %}
+<div class="alert alert-info">
+    <strong>Reason:</strong><br>
+    {{ rejection_reason }}
+</div>
+{% endif %}
+
+<p class="email-text">
+    <strong>What are your options?</strong>
+</p>
+
+<ul style="color: #4b5563; margin: 16px 0 24px 20px;">
+    <li style="margin-bottom: 8px;"> Contact our support team to discuss the decision</li>
+    <li style="margin-bottom: 8px;"> Submit a new application with updated information</li>
+    <li style="margin-bottom: 8px;"> Explore alternative products that may suit your needs</li>
+</ul>
+
+<div class="button-container">
+    <a href="{{ site_url }}/policies/products/" class="button">Browse Other Products</a>
+</div>
+
+<p class="email-text">
+    We understand this may be disappointing news. Please remember that our team is here to help you find the right coverage for your needs.
+</p>
+
+<p class="email-text">
+    If you believe this decision was made in error or if you have additional information that may affect the outcome, please don't hesitate to contact us.
+</p>
+
+<p class="email-text">
+    Best regards,<br>
+    <strong>The ifinsure Team</strong>
+</p>
+{% endblock %}

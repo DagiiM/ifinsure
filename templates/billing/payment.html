@@ -1,0 +1,439 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Pay Invoice - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'billing:invoices' %}">Billing</a>
+            <span>›</span>
+            <a href="{% url 'billing:invoice_detail' invoice.pk %}">{{ invoice.invoice_number }}</a>
+            <span>›</span>
+            <span>Payment</span>
+        </nav>
+        <h1 class="page-title">Make Payment</h1>
+        <p class="page-subtitle">Pay invoice {{ invoice.invoice_number }}</p>
+    </div>
+</div>
+
+<div class="payment-layout">
+    <!-- Payment Form -->
+    <div class="payment-form-card">
+        <div class="card-header">
+            <h3>Payment Details</h3>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label class="form-label">Payment Amount *</label>
+                    {{ form.amount }}
+                    <span class="form-hint">Balance due: KES {{ invoice.balance|intcomma }}</span>
+                    {% if form.amount.errors %}
+                    <span class="form-error">{{ form.amount.errors.0 }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Payment Method *</label>
+                    <div class="payment-methods">
+                        {% for value, label in form.fields.payment_method.choices %}
+                        {% if value %}
+                        <label class="payment-method-option">
+                            <input type="radio" name="payment_method" value="{{ value }}" {% if forloop.first %}checked{% endif %}>
+                            <div class="payment-method-card">
+                                <span class="payment-method-icon">
+                                    {% if value == 'mpesa' %}
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                    </svg>
+                                    {% elif value == 'card' %}
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                    </svg>
+                                    {% elif value == 'bank_transfer' %}
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                    </svg>
+                                    {% else %}
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="28" height="28">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
+                                    {% endif %}
+                                </span>
+                                <span class="payment-method-label">{{ label }}</span>
+                            </div>
+                        </label>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="form-group" id="transactionIdGroup">
+                    <label class="form-label">Transaction/Reference ID</label>
+                    {{ form.transaction_id }}
+                    <span class="form-hint">Enter the M-Pesa or bank transaction reference</span>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Notes (Optional)</label>
+                    {{ form.notes }}
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="submit-payment-btn">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Confirm Payment
+                    </button>
+                    <a href="{% url 'billing:invoice_detail' invoice.pk %}" class="cancel-btn">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="payment-sidebar">
+        <!-- Invoice Summary -->
+        <div class="sidebar-card">
+            <h4>Invoice Summary</h4>
+            <div class="summary-items">
+                <div class="summary-item">
+                    <span class="summary-label">Invoice</span>
+                    <span class="summary-value">{{ invoice.invoice_number }}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Due Date</span>
+                    <span class="summary-value {% if invoice.is_overdue %}text-danger{% endif %}">
+                        {{ invoice.due_date|date:"M d, Y" }}
+                    </span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Total Amount</span>
+                    <span class="summary-value">KES {{ invoice.amount|intcomma }}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Already Paid</span>
+                    <span class="summary-value text-success">KES {{ invoice.paid_amount|intcomma }}</span>
+                </div>
+                <div class="summary-item summary-total">
+                    <span class="summary-label">Balance Due</span>
+                    <span class="summary-value text-danger">KES {{ invoice.balance|intcomma }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment Instructions -->
+        <div class="sidebar-card">
+            <h4>Payment Instructions</h4>
+            <div class="instructions">
+                <div class="instruction-item">
+                    <div class="instruction-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="instruction-content">
+                        <h5>M-Pesa</h5>
+                        <p>Paybill: <strong>123456</strong></p>
+                        <p>Account: <strong>{{ invoice.invoice_number }}</strong></p>
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                        </svg>
+                    </div>
+                    <div class="instruction-content">
+                        <h5>Bank Transfer</h5>
+                        <p>Bank: <strong>Example Bank</strong></p>
+                        <p>Account: <strong>1234567890</strong></p>
+                        <p>Ref: <strong>{{ invoice.invoice_number }}</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-600);
+}
+
+.breadcrumb span {
+    color: var(--color-gray-400);
+}
+
+/* Layout */
+.payment-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .payment-layout { grid-template-columns: 1fr; }
+}
+
+/* Payment Form Card */
+.payment-form-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.payment-form-card .card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.payment-form-card .card-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.payment-form-card .card-body {
+    padding: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-gray-700);
+}
+
+.form-hint {
+    display: block;
+    margin-top: 0.375rem;
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.form-error {
+    display: block;
+    margin-top: 0.375rem;
+    font-size: 0.8rem;
+    color: #dc2626;
+}
+
+/* Payment Methods */
+.payment-methods {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+
+.payment-method-option {
+    cursor: pointer;
+}
+
+.payment-method-option input {
+    display: none;
+}
+
+.payment-method-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    border: 2px solid var(--color-gray-200);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.payment-method-option input:checked + .payment-method-card {
+    border-color: var(--color-primary-500);
+    background: var(--color-primary-50);
+}
+
+.payment-method-icon {
+    color: var(--color-gray-500);
+}
+
+.payment-method-option input:checked + .payment-method-card .payment-method-icon {
+    color: var(--color-primary-600);
+}
+
+.payment-method-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-gray-700);
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.submit-payment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    transition: all 0.2s;
+}
+
+.submit-payment-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+}
+
+.cancel-btn {
+    padding: 0.875rem 1.5rem;
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.cancel-btn:hover {
+    background: var(--color-gray-200);
+}
+
+/* Sidebar */
+.payment-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sidebar-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.sidebar-card h4 {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.summary-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.summary-label {
+    color: var(--color-gray-600);
+    font-size: 0.9rem;
+}
+
+.summary-value {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.summary-total {
+    padding-top: 0.75rem;
+    border-top: 2px solid var(--color-gray-200);
+    border-bottom: none;
+}
+
+.summary-total .summary-label,
+.summary-total .summary-value {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* Instructions */
+.instructions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.instruction-item {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.instruction-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--color-gray-100);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-gray-600);
+    flex-shrink: 0;
+}
+
+.instruction-content {
+    flex: 1;
+}
+
+.instruction-content h5 {
+    margin: 0 0 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.instruction-content p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-gray-600);
+    line-height: 1.5;
+}
+
+.instruction-content strong {
+    color: var(--color-gray-900);
+}
+
+.text-success { color: #16a34a; }
+.text-danger { color: #dc2626; }
+</style>
+{% endblock %}

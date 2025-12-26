@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Trash - ifinsure{% endblock %}
+
+{% block content %}
+<div class="trash-page">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <h1 class="page-title">
+                <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Trash
+            </h1>
+            <p class="page-subtitle">Items are automatically deleted after 30 days</p>
+        </div>
+        <div class="header-actions">
+            {% if statistics.expired > 0 %}
+            <form method="post" action="{% url 'trash:empty_expired' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-warning">
+                    <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                    </svg>
+                    Delete {{ statistics.expired }} Expired
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ statistics.total }}</span>
+                <span class="stat-label">Total Items</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon text-success">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 18 0 9 9 0 1 0-18 0"></path>
+                    <path d="M12 8v4l2 2"></path>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ statistics.can_restore }}</span>
+                <span class="stat-label">Can Restore</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon text-warning">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ statistics.expiring_soon }}</span>
+                <span class="stat-label">Expiring Soon</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon text-danger">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+            </div>
+            <div class="stat-content">
+                <span class="stat-value">{{ statistics.expired }}</span>
+                <span class="stat-label">Expired</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="trash-filters">
+        <div class="search-box">
+            <form method="get" class="search-form">
+                <input type="search" name="q" value="{{ search_query }}" placeholder="Search trash..." class="form-control">
+                {% for type in current_filter %}
+                <input type="hidden" name="type" value="{{ type }}">
+                {% endfor %}
+            </form>
+        </div>
+        <div class="filter-chips">
+            {% if available_models %}
+            <span class="filter-label">Filter:</span>
+            {% for model in available_models %}
+            <a href="?type={{ model.model_name }}" class="filter-chip {% if model.model_name in current_filter %}active{% endif %}">
+                {{ model.model_verbose_name|default:model.model_name }}
+            </a>
+            {% endfor %}
+            {% if current_filter %}
+            <a href="{% url 'trash:list' %}" class="filter-chip clear">Clear filters</a>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Trash Items List -->
+    <div class="trash-list">
+        {% if items %}
+            <form method="post" id="bulkActionForm">
+                {% csrf_token %}
+                
+                <!-- Bulk Actions -->
+                <div class="bulk-actions" id="bulkActions" style="display: none;">
+                    <span class="selected-count">0 selected</span>
+                    <button type="submit" formaction="{% url 'trash:restore_multiple' %}" class="btn btn-success btn-sm">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 1 0 9-9"></path>
+                            <polyline points="3 3 3 9 9 9"></polyline>
+                        </svg>
+                        Restore Selected
+                    </button>
+                    <button type="submit" formaction="{% url 'trash:delete_multiple' %}" class="btn btn-danger btn-sm" onclick="return confirm('Permanently delete selected items? This cannot be undone.')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                        </svg>
+                        Delete Permanently
+                    </button>
+                </div>
+
+                {% for item in items %}
+                <div class="trash-item {% if item.is_expired %}expired{% endif %}" data-id="{{ item.id }}">
+                    <div class="item-checkbox">
+                        <input type="checkbox" name="ids" value="{{ item.id }}" class="item-select" onchange="updateBulkActions()">
+                    </div>
+                    <div class="item-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                            <polyline points="13 2 13 9 20 9"></polyline>
+                        </svg>
+                    </div>
+                    <div class="item-content">
+                        <h4 class="item-title">{{ item.title }}</h4>
+                        <div class="item-meta">
+                            <span class="item-type">{{ item.model_verbose_name|default:item.model_name }}</span>
+                            <span class="item-separator">•</span>
+                            <span class="item-time">Deleted {{ item.time_in_trash }} ago</span>
+                            {% if item.trashed_by %}
+                            <span class="item-separator">•</span>
+                            <span class="item-by">by {{ item.trashed_by }}</span>
+                            {% endif %}
+                        </div>
+                        {% if item.trash_reason %}
+                        <p class="item-reason">{{ item.trash_reason }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="item-expiry">
+                        {% if item.is_expired %}
+                        <span class="expiry-badge expired">Expired</span>
+                        {% elif item.days_until_expiry <= 7 %}
+                        <span class="expiry-badge warning">{{ item.days_until_expiry }} days left</span>
+                        {% else %}
+                        <span class="expiry-badge">{{ item.days_until_expiry }} days left</span>
+                        {% endif %}
+                    </div>
+                    <div class="item-actions">
+                        {% if not item.is_expired %}
+                        <form method="post" action="{% url 'trash:restore' item.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-ghost btn-sm" title="Restore">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 12a9 9 0 1 0 9-9"></path>
+                                    <polyline points="3 3 3 9 9 9"></polyline>
+                                </svg>
+                                Restore
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="post" action="{% url 'trash:delete' item.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-ghost btn-sm text-danger" title="Delete permanently" onclick="return confirm('Permanently delete this item? This cannot be undone.')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                                </svg>
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </form>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </div>
+                <h3>Trash is empty</h3>
+                <p>Deleted items will appear here. You can restore them or wait for automatic deletion.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-wrapper">
+        <nav class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="page-link">← Previous</a>
+            {% endif %}
+            
+            <span class="page-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="page-link">Next →</a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function updateBulkActions() {
+    const checkboxes = document.querySelectorAll('.item-select:checked');
+    const bulkActions = document.getElementById('bulkActions');
+    const countSpan = bulkActions.querySelector('.selected-count');
+    
+    if (checkboxes.length > 0) {
+        bulkActions.style.display = 'flex';
+        countSpan.textContent = checkboxes.length + ' selected';
+    } else {
+        bulkActions.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

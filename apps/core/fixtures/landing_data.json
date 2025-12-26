@@ -1,0 +1,88 @@
+[
+    {
+        "model": "core.landingpagesettings",
+        "pk": 1,
+        "fields": {
+            "hero_badge_text": "Next Gen Insurance",
+            "hero_title": "Modern Insurance for Modern Life",
+            "hero_subtitle": "Compare and buy the best insurance policies in minutes. Transparent, fast, and secure.",
+            "hero_cta_primary_text": "Explore Marketplace",
+            "hero_cta_secondary_text": "Learn More",
+            "hero_feature_1": "Instant Approval",
+            "hero_feature_2": "24/7 Support",
+            "demo_coverage_amount": "KES 50,000,000",
+            "demo_growth_percentage": "+12.5%",
+            "demo_policies_count": "1,234",
+            "demo_claims_rate": "98%",
+            "trusted_by_text": "Trusted by over 2,000 modern companies",
+            "features_title": "Why Choose ifinsure?",
+            "features_subtitle": "We've reimagined insurance from the ground up to serve the speed of modern business.",
+            "process_title": "Insurance in 3 Simple Steps",
+            "process_step_1_title": "Apply Online",
+            "process_step_1_description": "Fill out a simple, smart form to tell us about your business needs in under 5 minutes.",
+            "process_step_2_title": "Get Approved",
+            "process_step_2_description": "Our AI reviews your application instantly, generating a custom quote and immediate coverage.",
+            "process_step_3_title": "Manage Policy",
+            "process_step_3_description": "Access your state-of-the-art dashboard to file claims, adjust coverage, and pay premiums 24/7.",
+            "is_active": true,
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "core.landingfeature",
+        "pk": 1,
+        "fields": {
+            "title": "Instant Quotes",
+            "description": "Get real-time quotes from top insurance providers based on your specific needs.",
+            "icon": "lightning",
+            "order": 1,
+            "is_active": true,
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "core.landingfeature",
+        "pk": 2,
+        "fields": {
+            "title": "Easy Comparison",
+            "description": "Compare different policies side-by-side to find the best value for your money.",
+            "icon": "shield",
+            "order": 2,
+            "is_active": true,
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z"
+        }
+    },
+    {
+        "model": "core.landingstat",
+        "pk": 1,
+        "fields": {
+            "label": "Happy Customers",
+            "value": "10,000+",
+            "order": 1,
+            "is_active": true,
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "is_animated": true,
+            "numeric_value": 10000,
+            "suffix": "+"
+        }
+    },
+    {
+        "model": "core.landingstat",
+        "pk": 2,
+        "fields": {
+            "label": "Settled Claims",
+            "value": "KSh 500M",
+            "order": 2,
+            "is_active": true,
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "is_animated": true,
+            "numeric_value": 500,
+            "suffix": "M"
+        }
+    }
+]

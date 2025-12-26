@@ -1,0 +1,106 @@
+<!-- Trash Widget Partial for Dashboard/Sidebar -->
+<div class="trash-widget">
+    <div class="widget-header">
+        <h4>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Trash
+        </h4>
+        <a href="{% url 'trash:list' %}" class="widget-link">View all</a>
+    </div>
+    
+    <div class="widget-stats">
+        <div class="stat">
+            <span class="stat-number">{{ statistics.total }}</span>
+            <span class="stat-label">Items</span>
+        </div>
+        <div class="stat">
+            <span class="stat-number {% if statistics.expiring_soon > 0 %}warning{% endif %}">{{ statistics.expiring_soon }}</span>
+            <span class="stat-label">Expiring soon</span>
+        </div>
+    </div>
+    
+    {% if statistics.expired > 0 %}
+    <div class="widget-alert">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        </svg>
+        <span>{{ statistics.expired }} expired item{{ statistics.expired|pluralize }} awaiting deletion</span>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.trash-widget {
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-4);
+}
+
+.widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-3);
+}
+
+.widget-header h4 {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-gray-900);
+    margin: 0;
+}
+
+.widget-link {
+    font-size: var(--font-size-xs);
+    color: var(--color-primary-600);
+    text-decoration: none;
+}
+
+.widget-link:hover {
+    text-decoration: underline;
+}
+
+.widget-stats {
+    display: flex;
+    gap: var(--spacing-4);
+}
+
+.widget-stats .stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.widget-stats .stat-number {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-gray-900);
+}
+
+.widget-stats .stat-number.warning {
+    color: var(--color-warning);
+}
+
+.widget-stats .stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+}
+
+.widget-alert {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    margin-top: var(--spacing-3);
+    padding: var(--spacing-2) var(--spacing-3);
+    background: var(--color-warning-light);
+    color: var(--color-warning);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-xs);
+}
+</style>

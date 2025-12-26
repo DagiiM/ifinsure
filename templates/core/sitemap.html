@@ -1,0 +1,182 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sitemap - ifinsure</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/variables.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <style>
+        body {
+            background: var(--color-gray-50);
+            min-height: 100vh;
+        }
+        .sitemap-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .sitemap-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 3rem 0;
+        }
+        .sitemap-header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-800));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .sitemap-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: white;
+            border-bottom: 1px solid var(--color-gray-200);
+        }
+        .sitemap-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-800));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .sitemap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .sitemap-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+        .sitemap-card-header {
+            padding: 1.25rem;
+            background: var(--color-gray-50);
+            border-bottom: 1px solid var(--color-gray-100);
+        }
+        .sitemap-card-header h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--color-gray-700);
+        }
+        .sitemap-card-body {
+            padding: 1rem;
+        }
+        .sitemap-link {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .sitemap-link:hover {
+            background: var(--color-gray-50);
+        }
+        .sitemap-link-icon {
+            color: var(--color-primary-500);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .sitemap-link-text strong {
+            display: block;
+            color: var(--color-gray-900);
+            font-size: 0.9rem;
+        }
+        .sitemap-link-text small {
+            color: var(--color-gray-500);
+            font-size: 0.8rem;
+        }
+        .quick-links {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .quick-links h3 {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            color: var(--color-gray-700);
+        }
+        .quick-links-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .quick-links-grid a {
+            padding: 0.5rem 1rem;
+            background: var(--color-gray-100);
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--color-gray-700);
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .quick-links-grid a:hover {
+            background: var(--color-primary-100);
+            color: var(--color-primary-700);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sitemap-nav">
+        <a href="/" class="sitemap-logo">ifinsure</a>
+        <div>
+            <a href="{% url 'accounts:login' %}" class="btn btn-outline btn-sm">Log In</a>
+            <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Get Started</a>
+        </div>
+    </nav>
+
+    <div class="sitemap-container">
+        <div class="sitemap-header">
+            <h1>Sitemap</h1>
+            <p class="text-muted">Overview of all available pages in ifinsure</p>
+        </div>
+
+        <div class="sitemap-grid">
+            {% for category, page_list in pages.items %}
+            <div class="sitemap-card">
+                <div class="sitemap-card-header">
+                    <h2>{{ category }}</h2>
+                </div>
+                <div class="sitemap-card-body">
+                    {% for page in page_list %}
+                    <a href="{{ page.url }}" class="sitemap-link">
+                        <svg class="sitemap-link-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                        <div class="sitemap-link-text">
+                            <strong>{{ page.name }}</strong>
+                            <small>{{ page.description }}</small>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="quick-links">
+            <h3>Quick Links</h3>
+            <div class="quick-links-grid">
+                <a href="/">Home</a>
+                <a href="{% url 'accounts:login' %}">Login</a>
+                <a href="{% url 'accounts:register' %}">Register</a>
+                <a href="{% url 'policies:products' %}">Products</a>
+                <a href="{% url 'policies:apply' %}">Apply</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

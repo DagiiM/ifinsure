@@ -1,0 +1,473 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ provider.name }} - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'crm:dashboard' %}">CRM</a>
+            <span>›</span>
+            <a href="{% url 'crm:provider_list' %}">Providers</a>
+            <span>›</span>
+            <span>{{ provider.name }}</span>
+        </nav>
+        <div class="provider-badge-row">
+            <div class="provider-logo" style="background: {{ provider.primary_color|default:'#6366f1' }}">{{ provider.code }}</div>
+            <div>
+                <h1 class="page-title">{{ provider.name }}</h1>
+                <p class="page-subtitle">{{ provider.get_provider_type_display }}</p>
+            </div>
+        </div>
+    </div>
+    {% if provider.website %}
+    <a href="{{ provider.website }}" target="_blank" class="btn btn-outline">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+        </svg>
+        Visit Website
+    </a>
+    {% endif %}
+</div>
+
+<div class="provider-layout">
+    <!-- Main -->
+    <div class="provider-main">
+        <!-- Products -->
+        <div class="provider-section">
+            <div class="section-header">
+                <h3>Products ({{ products|length }})</h3>
+                <a href="{% url 'crm:product_catalog' %}?provider={{ provider.code }}" class="section-link">View All →</a>
+            </div>
+            <div class="product-grid">
+                {% for product in products %}
+                <a href="{% url 'crm:product_detail' code=product.code %}" class="product-card">
+                    <span class="product-category">{{ product.category.name }}</span>
+                    <h4 class="product-name">{{ product.name }}</h4>
+                    <div class="product-meta">
+                        {% if product.premium_type == 'percentage' %}
+                        <span>{{ product.base_premium }}% premium</span>
+                        {% else %}
+                        <span>KES {{ product.base_premium|floatformat:0|intcomma }}</span>
+                        {% endif %}
+                        <span class="commission">{{ product.effective_commission_rate }}%</span>
+                    </div>
+                </a>
+                {% empty %}
+                <p class="empty-text">No products available</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Contacts -->
+        {% if contacts %}
+        <div class="provider-section">
+            <h3>Contacts</h3>
+            <div class="contact-list">
+                {% for contact in contacts %}
+                <div class="contact-item {% if contact.is_primary %}primary{% endif %}">
+                    <div class="contact-avatar">{{ contact.name|slice:":1"|upper }}</div>
+                    <div class="contact-info">
+                        <span class="contact-name">{{ contact.name }}</span>
+                        <span class="contact-title">{{ contact.title|default:contact.department }}</span>
+                    </div>
+                    <div class="contact-actions">
+                        {% if contact.phone %}
+                        <a href="tel:{{ contact.phone }}" class="contact-btn">📞</a>
+                        {% endif %}
+                        {% if contact.email %}
+                        <a href="mailto:{{ contact.email }}" class="contact-btn">✉️</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="provider-sidebar">
+        <!-- Info Card -->
+        <div class="sidebar-card">
+            <h4>Details</h4>
+            <div class="info-list">
+                <div class="info-row">
+                    <span>Code</span>
+                    <span>{{ provider.code }}</span>
+                </div>
+                <div class="info-row">
+                    <span>Type</span>
+                    <span>{{ provider.get_provider_type_display }}</span>
+                </div>
+                <div class="info-row">
+                    <span>Status</span>
+                    <span class="status {% if provider.is_active %}active{% else %}inactive{% endif %}">
+                        {{ provider.is_active|yesno:"Active,Inactive" }}
+                    </span>
+                </div>
+                {% if provider.ira_license %}
+                <div class="info-row">
+                    <span>IRA License</span>
+                    <span>{{ provider.ira_license }}</span>
+                </div>
+                {% endif %}
+                {% if provider.registration_number %}
+                <div class="info-row">
+                    <span>Reg. No.</span>
+                    <span>{{ provider.registration_number }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Commission Card -->
+        <div class="sidebar-card highlight">
+            <h4>Default Commission</h4>
+            <div class="commission-display">
+                <span class="commission-value">{{ provider.default_commission_rate }}%</span>
+                <span class="commission-label">of premium</span>
+            </div>
+        </div>
+        
+        <!-- Contact Card -->
+        <div class="sidebar-card">
+            <h4>Contact</h4>
+            <div class="info-list">
+                {% if provider.phone %}
+                <div class="info-row clickable" onclick="window.location='tel:{{ provider.phone }}'">
+                    <span>📞 Phone</span>
+                    <span>{{ provider.phone }}</span>
+                </div>
+                {% endif %}
+                {% if provider.email %}
+                <div class="info-row clickable" onclick="window.location='mailto:{{ provider.email }}'">
+                    <span>✉️ Email</span>
+                    <span>{{ provider.email }}</span>
+                </div>
+                {% endif %}
+                {% if provider.website %}
+                <div class="info-row">
+                    <span>🌐 Website</span>
+                    <a href="{{ provider.website }}" target="_blank">Visit</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Address Card -->
+        {% if provider.address %}
+        <div class="sidebar-card">
+            <h4>Address</h4>
+            <p class="address-text">
+                {{ provider.address }}<br>
+                {{ provider.city }}, {{ provider.country }}
+            </p>
+        </div>
+        {% endif %}
+        
+        <!-- API Card -->
+        {% if provider.api_enabled %}
+        <div class="sidebar-card">
+            <h4>API Integration</h4>
+            <div class="api-status enabled">
+                <span class="api-icon">🔗</span>
+                <span>API Enabled</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.provider-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.provider-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    color: white;
+    font-weight: 800;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.provider-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .provider-layout { grid-template-columns: 1fr; }
+}
+
+.provider-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.provider-section {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.provider-section h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: 1rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.product-card {
+    background: var(--color-gray-50);
+    border-radius: 12px;
+    padding: 1rem;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.product-card:hover {
+    background: var(--color-primary-50);
+}
+
+.product-category {
+    font-size: 0.7rem;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+}
+
+.product-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0.25rem 0;
+}
+
+.product-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.product-meta .commission {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--color-gray-50);
+    border-radius: 10px;
+}
+
+.contact-item.primary {
+    border: 2px solid var(--color-primary-200);
+}
+
+.contact-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-primary-100);
+    color: var(--color-primary-600);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.contact-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.contact-name {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.contact-title {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.contact-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.contact-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+/* Sidebar */
+.provider-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sidebar-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.sidebar-card.highlight {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+}
+
+.sidebar-card h4 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+}
+
+.info-row.clickable {
+    cursor: pointer;
+    padding: 0.5rem;
+    margin: -0.5rem;
+    border-radius: 6px;
+}
+
+.info-row.clickable:hover {
+    background: var(--color-gray-50);
+}
+
+.info-row span:first-child {
+    color: var(--color-gray-500);
+}
+
+.info-row span:last-child {
+    font-weight: 500;
+    color: var(--color-gray-900);
+}
+
+.status.active { color: #16a34a; }
+.status.inactive { color: #dc2626; }
+
+.commission-display {
+    text-align: center;
+    padding: 1rem;
+}
+
+.commission-value {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #166534;
+}
+
+.commission-label {
+    font-size: 0.8rem;
+    color: #166534;
+}
+
+.address-text {
+    color: var(--color-gray-700);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.api-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #dcfce7;
+    border-radius: 8px;
+    font-weight: 500;
+    color: #166534;
+}
+
+.api-icon {
+    font-size: 1.25rem;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.section-link {
+    font-size: 0.875rem;
+    color: var(--color-primary-600);
+    text-decoration: none;
+}
+
+.empty-text {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--color-gray-400);
+    font-style: italic;
+}
+</style>
+{% endblock %}

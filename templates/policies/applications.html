@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}My Applications - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>My Applications</h1>
+    <p>Track your insurance application progress</p>
+    <div class="page-header-actions">
+        <a href="{% url 'policies:products' %}" class="btn btn-primary">Apply for Insurance</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        {% if applications %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Application #</th>
+                        <th>Product</th>
+                        <th>Coverage</th>
+                        <th>Premium</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'policies:application_detail' app.pk %}" class="font-medium">
+                                {{ app.application_number }}
+                            </a>
+                        </td>
+                        <td>{{ app.product.name }}</td>
+                        <td>KES {{ app.requested_coverage|intcomma }}</td>
+                        <td>
+                            {% if app.calculated_premium %}
+                            KES {{ app.calculated_premium|intcomma }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-{% if app.status == 'approved' %}success{% elif app.status == 'rejected' %}danger{% elif app.status == 'submitted' or app.status == 'under_review' %}warning{% else %}default{% endif %}">
+                                {{ app.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ app.submitted_at|date:"M d, Y"|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'policies:application_detail' app.pk %}" class="btn btn-secondary btn-sm">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% include 'includes/pagination.html' %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📝</div>
+            <h3>No Applications</h3>
+            <p>You haven't submitted any applications yet.</p>
+            <a href="{% url 'policies:products' %}" class="btn btn-primary">Browse Products</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

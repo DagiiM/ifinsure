@@ -1,0 +1,458 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Claims Management - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">Claims Management</h1>
+        <p class="page-subtitle">Review and process customer insurance claims</p>
+    </div>
+</div>
+
+<!-- Stats Overview -->
+<div class="staff-claims-stats">
+    <div class="staff-stat-card">
+        <div class="staff-stat-icon blue">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+        </div>
+        <div class="staff-stat-content">
+            <span class="staff-stat-value">{{ total_count|default:0 }}</span>
+            <span class="staff-stat-label">Total Claims</span>
+        </div>
+    </div>
+    <div class="staff-stat-card">
+        <div class="staff-stat-icon purple">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+            </svg>
+        </div>
+        <div class="staff-stat-content">
+            <span class="staff-stat-value">{{ submitted_count|default:0 }}</span>
+            <span class="staff-stat-label">New Submissions</span>
+        </div>
+    </div>
+    <div class="staff-stat-card">
+        <div class="staff-stat-icon orange">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+            </svg>
+        </div>
+        <div class="staff-stat-content">
+            <span class="staff-stat-value">{{ review_count|default:0 }}</span>
+            <span class="staff-stat-label">Under Review</span>
+        </div>
+    </div>
+    <div class="staff-stat-card">
+        <div class="staff-stat-icon green">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <div class="staff-stat-content">
+            <span class="staff-stat-value">{{ approved_count|default:0 }}</span>
+            <span class="staff-stat-label">Approved</span>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="staff-filter-card">
+    <form method="get" class="staff-filter-form">
+        <div class="filter-field">
+            <label>Status</label>
+            {{ filter_form.status }}
+        </div>
+        <div class="filter-field">
+            <label>Priority</label>
+            {{ filter_form.priority }}
+        </div>
+        <div class="filter-field search">
+            <label>Search</label>
+            {{ filter_form.search }}
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="filter-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+                Filter
+            </button>
+            {% if request.GET %}
+            <a href="{% url 'claims:staff_list' %}" class="filter-clear-btn">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Claims Table -->
+<div class="staff-claims-table-card">
+    {% if claims %}
+    <div class="staff-claims-table-wrapper">
+        <table class="staff-claims-table">
+            <thead>
+                <tr>
+                    <th>Claim #</th>
+                    <th>Claimant</th>
+                    <th>Policy</th>
+                    <th>Amount</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for claim in claims %}
+                <tr class="{% if claim.priority == 'urgent' %}urgent-row{% endif %}">
+                    <td class="claim-num-cell">
+                        <span class="claim-num">{{ claim.claim_number }}</span>
+                    </td>
+                    <td class="claimant-cell">
+                        <span class="claimant-name">{{ claim.claimant.get_full_name }}</span>
+                        <span class="claimant-email">{{ claim.claimant.email }}</span>
+                    </td>
+                    <td class="policy-cell">
+                        <span class="policy-num">{{ claim.policy.policy_number }}</span>
+                        <span class="policy-product">{{ claim.policy.product.name|truncatewords:3 }}</span>
+                    </td>
+                    <td class="amount-cell">
+                        <span class="amount-value">KES {{ claim.claimed_amount|intcomma }}</span>
+                    </td>
+                    <td class="priority-cell">
+                        <span class="priority-badge priority-{{ claim.priority }}">
+                            {% if claim.priority == 'urgent' %}
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                            {% endif %}
+                            {{ claim.get_priority_display }}
+                        </span>
+                    </td>
+                    <td class="status-cell">
+                        <span class="status-badge status-{{ claim.status }}">
+                            {{ claim.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="date-cell">
+                        <span class="date-value">{{ claim.created_at|date:"M d, Y" }}</span>
+                        <span class="date-time">{{ claim.created_at|time:"H:i" }}</span>
+                    </td>
+                    <td class="actions-cell">
+                        <a href="{% url 'claims:staff_detail' claim.pk %}" class="review-btn">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            Review
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% include 'includes/pagination.html' %}
+    {% else %}
+    <div class="staff-claims-empty">
+        <div class="empty-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="64" height="64">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+        </div>
+        <h3>No Claims Found</h3>
+        <p>No claims match your current filter criteria.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Stats Grid */
+.staff-claims-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .staff-claims-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+.staff-stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.staff-stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.staff-stat-icon.blue { background: #eff6ff; color: #2563eb; }
+.staff-stat-icon.purple { background: #faf5ff; color: #9333ea; }
+.staff-stat-icon.orange { background: #fff7ed; color: #ea580c; }
+.staff-stat-icon.green { background: #f0fdf4; color: #16a34a; }
+
+.staff-stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.staff-stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+    line-height: 1;
+}
+
+.staff-stat-label {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+    margin-top: 0.25rem;
+}
+
+/* Filter Card */
+.staff-filter-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.staff-filter-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 140px;
+}
+
+.filter-field.search {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-field label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-gray-600);
+}
+
+.filter-field select,
+.filter-field input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    background: var(--color-primary-600);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.filter-btn:hover {
+    background: var(--color-primary-700);
+}
+
+.filter-clear-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--color-gray-600);
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.filter-clear-btn:hover {
+    background: var(--color-gray-50);
+}
+
+/* Table Card */
+.staff-claims-table-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.staff-claims-table-wrapper {
+    overflow-x: auto;
+}
+
+.staff-claims-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.staff-claims-table th {
+    padding: 1rem 1.25rem;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-gray-500);
+    background: var(--color-gray-50);
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.staff-claims-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    vertical-align: middle;
+}
+
+.staff-claims-table tr:last-child td {
+    border-bottom: none;
+}
+
+.staff-claims-table tr:hover {
+    background: var(--color-gray-50);
+}
+
+.staff-claims-table tr.urgent-row {
+    background: #fef2f2;
+}
+
+.staff-claims-table tr.urgent-row:hover {
+    background: #fee2e2;
+}
+
+.claim-num-cell .claim-num {
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+.claimant-cell, .policy-cell, .date-cell {
+    display: flex;
+    flex-direction: column;
+}
+
+.claimant-name, .policy-num {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.claimant-email, .policy-product, .date-time {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.amount-value {
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+.priority-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.priority-badge.priority-low { background: #f3f4f6; color: #6b7280; }
+.priority-badge.priority-normal { background: #dbeafe; color: #1e40af; }
+.priority-badge.priority-high { background: #fef3c7; color: #92400e; }
+.priority-badge.priority-urgent { background: #fee2e2; color: #dc2626; }
+
+.status-badge {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-badge.status-draft { background: #f3f4f6; color: #6b7280; }
+.status-badge.status-submitted { background: #dbeafe; color: #1e40af; }
+.status-badge.status-under_review { background: #fef3c7; color: #92400e; }
+.status-badge.status-approved { background: #dcfce7; color: #166534; }
+.status-badge.status-paid { background: #d1fae5; color: #047857; }
+.status-badge.status-rejected { background: #fee2e2; color: #991b1b; }
+
+.review-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    background: var(--color-primary-600);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.review-btn:hover {
+    background: var(--color-primary-700);
+}
+
+/* Empty State */
+.staff-claims-empty {
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.staff-claims-empty .empty-icon {
+    color: var(--color-gray-300);
+    margin-bottom: 1.5rem;
+}
+
+.staff-claims-empty h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0 0 0.5rem;
+}
+
+.staff-claims-empty p {
+    color: var(--color-gray-500);
+    margin: 0;
+}
+</style>
+{% endblock %}

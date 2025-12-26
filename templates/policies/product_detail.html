@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ product.name }} - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumbs">
+        <a href="{% url 'policies:products' %}">Products</a>
+        <span>/</span>
+        <span>{{ product.name }}</span>
+    </div>
+    <h1>{{ product.name }}</h1>
+    <p>
+        <span class="badge badge-default">{{ product.get_category_display }}</span>
+    </p>
+</div>
+
+<div class="grid grid-3 gap-6">
+    <!-- Product Details -->
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+            <h4>Product Details</h4>
+        </div>
+        <div class="card-body">
+            <p class="mb-6">{{ product.description }}</p>
+            
+            <h5>Coverage Details</h5>
+            <div class="profile-grid mb-6">
+                <div class="profile-item">
+                    <span class="profile-label">Minimum Coverage</span>
+                    <span class="profile-value">KES {{ product.min_coverage|intcomma }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Maximum Coverage</span>
+                    <span class="profile-value">KES {{ product.max_coverage|intcomma }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Base Premium</span>
+                    <span class="profile-value">KES {{ product.base_premium|intcomma }}/year</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Term Options</span>
+                    <span class="profile-value">{{ product.min_term_months }} - {{ product.max_term_months }} months</span>
+                </div>
+            </div>
+            
+            {% if product.features %}
+            <h5>Features</h5>
+            <ul class="mb-4">
+                {% for feature in product.features %}
+                <li>{{ feature }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            
+            {% if product.terms_and_conditions %}
+            <h5>Terms & Conditions</h5>
+            <p class="text-sm text-muted">{{ product.terms_and_conditions|linebreaks }}</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Apply Card -->
+    <div class="card">
+        <div class="card-header">
+            <h4>Get Started</h4>
+        </div>
+        <div class="card-body">
+            <div class="text-center mb-4">
+                <div class="text-sm text-muted">Starting from</div>
+                <div class="text-2xl font-bold text-primary">
+                    KES {{ product.base_premium|intcomma }}
+                </div>
+                <div class="text-sm text-muted">per year</div>
+            </div>
+            
+            <a href="{% url 'policies:apply' %}?product={{ product.pk }}" class="btn btn-primary btn-block btn-lg mb-4">
+                Apply Now
+            </a>
+            
+            <ul class="text-sm text-muted" style="list-style: none; padding: 0;">
+                <li class="flex items-center gap-2 mb-2">
+                    <span style="color: var(--color-success);">✓</span>
+                    Quick online application
+                </li>
+                <li class="flex items-center gap-2 mb-2">
+                    <span style="color: var(--color-success);">✓</span>
+                    Fast approval process
+                </li>
+                <li class="flex items-center gap-2 mb-2">
+                    <span style="color: var(--color-success);">✓</span>
+                    Flexible payment options
+                </li>
+                <li class="flex items-center gap-2">
+                    <span style="color: var(--color-success);">✓</span>
+                    24/7 claims support
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-4);
+}
+
+.profile-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.profile-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.profile-value {
+    font-size: var(--font-size-base);
+    color: var(--color-gray-900);
+}
+</style>
+{% endblock %}

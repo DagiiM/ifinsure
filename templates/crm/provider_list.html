@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Insurance Providers - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">Insurance Providers</h1>
+        <p class="page-subtitle">Partner underwriters and insurers</p>
+    </div>
+</div>
+
+<div class="provider-grid">
+    {% for provider in providers %}
+    <a href="{% url 'crm:provider_detail' pk=provider.pk %}" class="provider-card">
+        <div class="provider-header" style="background: linear-gradient(135deg, {{ provider.primary_color|default:'#6366f1' }}, {{ provider.primary_color|default:'#6366f1' }}dd)">
+            <span class="provider-code">{{ provider.code }}</span>
+            {% if provider.api_enabled %}
+            <span class="api-badge">API</span>
+            {% endif %}
+        </div>
+        <div class="provider-body">
+            <h3 class="provider-name">{{ provider.name }}</h3>
+            <span class="provider-type">{{ provider.get_provider_type_display }}</span>
+            
+            <div class="provider-stats">
+                <div class="stat">
+                    <span class="stat-value">{{ provider.product_count }}</span>
+                    <span class="stat-label">Products</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">{{ provider.default_commission_rate }}%</span>
+                    <span class="stat-label">Commission</span>
+                </div>
+            </div>
+            
+            <div class="provider-contact">
+                {% if provider.phone %}
+                <span>📞 {{ provider.phone }}</span>
+                {% endif %}
+                {% if provider.email %}
+                <span>✉️ {{ provider.email }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="provider-footer">
+            <span class="status {% if provider.is_active %}active{% else %}inactive{% endif %}">
+                {{ provider.is_active|yesno:"Active,Inactive" }}
+            </span>
+        </div>
+    </a>
+    {% empty %}
+    <div class="empty-state">
+        <p>No providers found</p>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.provider-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+@media (max-width: 1000px) {
+    .provider-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+    .provider-grid { grid-template-columns: 1fr; }
+}
+
+.provider-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.provider-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.provider-header {
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.provider-code {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: white;
+}
+
+.api-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border-radius: 4px;
+}
+
+.provider-body {
+    padding: 1.5rem;
+}
+
+.provider-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: 0.25rem;
+}
+
+.provider-type {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.provider-stats {
+    display: flex;
+    gap: 2rem;
+    margin: 1rem 0;
+    padding: 1rem 0;
+    border-top: 1px solid var(--color-gray-100);
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.provider-stats .stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.provider-stats .stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+.provider-stats .stat-label {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.provider-contact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--color-gray-600);
+}
+
+.provider-footer {
+    padding: 1rem 1.5rem;
+    background: var(--color-gray-50);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.status {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    text-transform: uppercase;
+}
+
+.status.active {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status.inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem;
+    color: var(--color-gray-400);
+}
+</style>
+{% endblock %}

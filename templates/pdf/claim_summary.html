@@ -1,0 +1,94 @@
+{% extends 'pdf/base.html' %}
+
+{% block title %}Claim Summary - {{ claim.claim_number }}{% endblock %}
+
+{% block doc_info %}
+<div class="doc-title">CLAIM SUMMARY</div>
+<div class="doc-number">{{ claim.claim_number }}</div>
+<div class="doc-date">Generated: {{ now|date:"F d, Y" }}</div>
+{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="section-title">Claim Information</div>
+    <div class="two-column">
+        <div class="column">
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-label">Claim Number</div>
+                    <div class="info-value">{{ claim.claim_number }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Policy Number</div>
+                    <div class="info-value">{{ claim.policy.policy_number }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Product</div>
+                    <div class="info-value">{{ claim.policy.product.name }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Claim Type</div>
+                    <div class="info-value">{{ claim.get_claim_type_display }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="column">
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-label">Incident Date</div>
+                    <div class="info-value">{{ claim.incident_date|date:"F d, Y" }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Date Submitted</div>
+                    <div class="info-value">{{ claim.created_at|date:"F d, Y" }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">{{ claim.get_status_display }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Amount Claimed</div>
+                    <div class="info-value">KES {{ claim.amount_claimed|floatformat:2. }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">Claimant Information</div>
+    <div class="info-grid">
+        <div class="info-row">
+            <div class="info-label">Policyholder</div>
+            <div class="info-value">{{ claim.policy.holder.get_full_name }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Email</div>
+            <div class="info-value">{{ claim.policy.holder.email }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">Incident Description</div>
+    <div class="notes-box">
+        <p style="font-size: 9pt;">{{ claim.description }}</p>
+    </div>
+</div>
+
+{% if claim.status == 'approved' %}
+<div class="section">
+    <div class="section-title">Settlement Details</div>
+    <div class="info-grid">
+        <div class="info-row">
+            <div class="info-label">Amount Approved</div>
+            <div class="info-value" style="color: #059669;">KES {{ claim.amount_approved|floatformat:2. }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="terms">
+    <p>This claim summary is for informational purposes only. Contact our claims department for questions.</p>
+</div>
+{% endblock %}

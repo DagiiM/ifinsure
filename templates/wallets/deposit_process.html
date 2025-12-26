@@ -1,0 +1,328 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Processing Payment - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'wallets:wallet' %}">Wallet</a>
+            <span>›</span>
+            <a href="{% url 'wallets:deposit' %}">Deposit</a>
+            <span>›</span>
+            <span>Processing</span>
+        </nav>
+        <h1 class="page-title">Complete Your Payment</h1>
+        <p class="page-subtitle">Follow the steps below to complete your deposit</p>
+    </div>
+</div>
+
+<div class="process-container">
+    <div class="process-card">
+        <!-- Payment Summary -->
+        <div class="process-summary">
+            <div class="process-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+            </div>
+            <div class="process-details">
+                <span class="process-label">Amount to Pay</span>
+                <span class="process-amount">{{ payment.currency }} {{ payment.amount|floatformat:0|intcomma }}</span>
+            </div>
+        </div>
+        
+        <div class="process-info">
+            <div class="info-row">
+                <span class="info-label">Reference</span>
+                <span class="info-value">{{ payment.reference }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Payment Method</span>
+                <span class="info-value">{{ payment.payment_method.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Status</span>
+                <span class="info-status status-{{ payment.status }}">{{ payment.get_status_display }}</span>
+            </div>
+        </div>
+        
+        <!-- Status Message -->
+        {% if payment.status == 'completed' %}
+        <div class="process-status success">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <h3>Payment Successful!</h3>
+                <p>Your wallet has been credited with {{ payment.currency }} {{ payment.amount|floatformat:0|intcomma }}</p>
+            </div>
+        </div>
+        <a href="{% url 'wallets:wallet' %}" class="btn btn-primary btn-lg btn-block">
+            Back to Wallet
+        </a>
+        
+        {% elif payment.status == 'failed' %}
+        <div class="process-status error">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <h3>Payment Failed</h3>
+                <p>Something went wrong. Please try again.</p>
+            </div>
+        </div>
+        <a href="{% url 'wallets:deposit' %}" class="btn btn-primary btn-lg btn-block">
+            Try Again
+        </a>
+        
+        {% else %}
+        <div class="process-status pending">
+            <div class="spinner"></div>
+            <div>
+                <h3>Processing Payment...</h3>
+                <p>Please wait while we process your payment. This may take a few moments.</p>
+            </div>
+        </div>
+        
+        <div class="process-notice">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <strong>Note:</strong> This payment method is not yet fully integrated. 
+                For immediate deposits, please use M-Pesa or Bank Transfer with proof of payment.
+            </div>
+        </div>
+        
+        <div class="process-actions">
+            <a href="{% url 'wallets:deposit' %}" class="btn btn-outline btn-lg">
+                Choose Different Method
+            </a>
+            <a href="{% url 'wallets:wallet' %}" class="btn btn-primary btn-lg">
+                Back to Wallet
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.process-container {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.process-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.process-summary {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--color-primary-50), var(--color-primary-100));
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+}
+
+.process-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--color-primary-600);
+    color: white;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.process-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.process-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.process-label {
+    font-size: 0.75rem;
+    color: var(--color-primary-600);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+
+.process-amount {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-primary-800);
+}
+
+.process-info {
+    margin-bottom: 1.5rem;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: var(--color-gray-500);
+    font-size: 0.875rem;
+}
+
+.info-value {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.info-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+}
+
+.status-pending,
+.status-processing {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-completed {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-failed {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.process-status {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.process-status.pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.process-status.success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.process-status.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.process-status svg {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.process-status h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.process-status p {
+    font-size: 0.875rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.process-notice {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--color-gray-50);
+    border-radius: 10px;
+    font-size: 0.875rem;
+    color: var(--color-gray-600);
+    margin-bottom: 1.5rem;
+}
+
+.process-notice svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--color-gray-400);
+}
+
+.process-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.process-actions .btn {
+    flex: 1;
+    justify-content: center;
+}
+
+.btn-block {
+    width: 100%;
+    justify-content: center;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-600);
+}
+
+.breadcrumb span {
+    color: var(--color-gray-400);
+}
+</style>
+{% endblock %}

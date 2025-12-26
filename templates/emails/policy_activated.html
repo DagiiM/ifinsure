@@ -1,0 +1,93 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}Policy Activated - ifinsure{% endblock %}
+
+{% block content %}
+<p class="email-greeting">Your Policy is Now Active! </p>
+
+<p class="email-text">
+    Dear {{ user.first_name }},
+</p>
+
+<p class="email-text">
+    Great news! Your insurance policy has been successfully activated. You are now covered under your new policy.
+</p>
+
+<div class="alert alert-success">
+     Your coverage is now active and in effect!
+</div>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Policy Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Policy Number</span>
+        <span class="highlight-value">{{ policy.policy_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Product</span>
+        <span class="highlight-value">{{ policy.product.name }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Coverage Amount</span>
+        <span class="highlight-value">KES {{ policy.coverage_amount|floatformat:0|intcomma }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Premium</span>
+        <span class="highlight-value">KES {{ policy.premium_amount|floatformat:0|intcomma }} / {{ policy.product.payment_frequency }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Effective Date</span>
+        <span class="highlight-value">{{ policy.start_date|date:"F d, Y" }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Expiry Date</span>
+        <span class="highlight-value">{{ policy.end_date|date:"F d, Y" }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Status</span>
+        <span class="highlight-value">
+            <span class="status-badge status-success">Active</span>
+        </span>
+    </div>
+</div>
+
+<p class="email-text">
+    <strong>What's included in your coverage:</strong>
+</p>
+
+<ul style="color: #4b5563; margin: 16px 0 24px 20px;">
+    {% for benefit in policy.product.benefits %}
+    <li style="margin-bottom: 8px;"> {{ benefit }}</li>
+    {% empty %}
+    <li style="margin-bottom: 8px;"> Full coverage as per policy terms</li>
+    {% endfor %}
+</ul>
+
+<div class="button-container">
+    <a href="{{ site_url }}/policies/{{ policy.pk }}/" class="button">View Policy Details</a>
+</div>
+
+<p class="email-text">
+    <strong>Important reminders:</strong>
+</p>
+
+<ul style="color: #4b5563; margin: 16px 0 24px 20px;">
+    <li style="margin-bottom: 8px;"> Download and keep a copy of your policy certificate</li>
+    <li style="margin-bottom: 8px;"> Ensure timely premium payments to maintain coverage</li>
+    <li style="margin-bottom: 8px;"> Save our claims hotline for emergencies</li>
+    <li style="margin-bottom: 8px;"> Use our online portal to manage your policy</li>
+</ul>
+
+<div class="alert alert-info">
+     <strong>Need to file a claim?</strong> Visit your dashboard or call our 2.4./7 claims hotline.
+</div>
+
+<p class="email-text">
+    Thank you for choosing ifinsure. We're honored to be your insurance partner and committed to being there when you need us most.
+</p>
+
+<p class="email-text">
+    Best regards,<br>
+    <strong>The ifinsure Team</strong>
+</p>
+{% endblock %}

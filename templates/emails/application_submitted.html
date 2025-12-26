@@ -1,0 +1,69 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}Application Submitted - ifinsure{% endblock %}
+
+{% block content %}
+<p class="email-greeting">Application Submitted Successfully! </p>
+
+<p class="email-text">
+    Dear {{ user.first_name }},
+</p>
+
+<p class="email-text">
+    Thank you for submitting your insurance application. We have received your request and our team is now reviewing it.
+</p>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Application Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Application Number</span>
+        <span class="highlight-value">{{ application.application_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Product</span>
+        <span class="highlight-value">{{ application.product.name }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Coverage Type</span>
+        <span class="highlight-value">{{ application.product.coverage_type }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Submitted On</span>
+        <span class="highlight-value">{{ application.created_at|date:"F d, Y" }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Status</span>
+        <span class="highlight-value">
+            <span class="status-badge status-info">Under Review</span>
+        </span>
+    </div>
+</div>
+
+<p class="email-text">
+    <strong>What happens next?</strong>
+</p>
+
+<ul style="color: #4b5563; margin: 16px 0 24px 20px;">
+    <li style="margin-bottom: 8px;">1. Our team will review your application (usually within 1-2 business days)</li>
+    <li style="margin-bottom: 8px;">2. We may contact you if additional information is needed</li>
+    <li style="margin-bottom: 8px;">3. You'll receive an email notification once a decision is made</li>
+    <li style="margin-bottom: 8px;">4. If approved, you'll receive payment instructions</li>
+</ul>
+
+<div class="button-container">
+    <a href="{{ site_url }}/policies/applications/{{ application.pk }}/" class="button">Track Application</a>
+</div>
+
+<div class="alert alert-info">
+     <strong>Tip:</strong> Keep your application number handy: <strong>{{ application.application_number }}</strong>
+</div>
+
+<p class="email-text">
+    If you have any questions about your application, please don't hesitate to reach out to our team.
+</p>
+
+<p class="email-text">
+    Best regards,<br>
+    <strong>The ifinsure Team</strong>
+</p>
+{% endblock %}

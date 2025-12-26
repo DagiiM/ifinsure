@@ -1,0 +1,66 @@
+[
+    {
+        "model": "workflow.department",
+        "pk": "e0000000-0000-0000-0000-000000000001",
+        "fields": {
+            "name": "Claims Department",
+            "code": "CLAIMS",
+            "description": "Handles all policy claims and settlements.",
+            "is_active": true,
+            "visibility": "internal",
+            "is_published": true,
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "notifications_enabled": true,
+            "consent_given": false,
+            "is_anonymized": false,
+            "allowed_users": [],
+            "allowed_groups": [],
+            "watchers": []
+        }
+    },
+    {
+        "model": "workflow.department",
+        "pk": "e0000000-0000-0000-0000-000000000002",
+        "fields": {
+            "name": "Underwriting",
+            "code": "UW",
+            "description": "Risk assessment and policy issuance.",
+            "is_active": true,
+            "visibility": "internal",
+            "is_published": true,
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "notifications_enabled": true,
+            "consent_given": false,
+            "is_anonymized": false,
+            "allowed_users": [],
+            "allowed_groups": [],
+            "watchers": []
+        }
+    },
+    {
+        "model": "workflow.workclass",
+        "pk": "f0000000-0000-0000-0000-000000000001",
+        "fields": {
+            "name": "Standard Agent",
+            "code": "AGENT-STD",
+            "level": 3,
+            "department": "e0000000-0000-0000-0000-000000000001",
+            "description": "Standard claims processing agent.",
+            "monetary_limit": "50000.00",
+            "daily_ticket_limit": 20,
+            "is_active": true,
+            "visibility": "internal",
+            "is_published": true,
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "notifications_enabled": true,
+            "consent_given": false,
+            "is_anonymized": false,
+            "allowed_users": [],
+            "allowed_groups": [],
+            "watchers": []
+        }
+    }
+]

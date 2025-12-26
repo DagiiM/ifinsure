@@ -1,0 +1,84 @@
+{% extends 'pdf/base.html' %}
+
+{% block title %}Account Statement{% endblock %}
+
+{% block doc_info %}
+<div class="doc-title">ACCOUNT STATEMENT</div>
+<div class="doc-date">Period: {{ start_date|date:"M d" }} - {{ end_date|date:"M d, Y" }}</div>
+{% endblock %}
+
+{% block content %}
+<div class="section">
+    <div class="section-title">Account Holder</div>
+    <div class="info-grid">
+        <div class="info-row">
+            <div class="info-label">Name</div>
+            <div class="info-value">{{ user.get_full_name }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Email</div>
+            <div class="info-value">{{ user.email }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Statement Date</div>
+            <div class="info-value">{{ now|date:"F d, Y" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">Account Summary</div>
+    <div class="info-grid">
+        <div class="info-row">
+            <div class="info-label">Total Billed</div>
+            <div class="info-value">KES {{ total_billed|floatformat:2. }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Total Paid</div>
+            <div class="info-value" style="color: #059669;">KES {{ total_paid|floatformat:2. }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Outstanding Balance</div>
+            <div class="info-value" style="color: {% if outstanding > 0 %}#dc2626{% else %}#059669{% endif %};">
+                KES {{ outstanding|floatformat:2. }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">Transaction History</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Reference</th>
+                <th class="text-right">Debit</th>
+                <th class="text-right">Credit</th>
+                <th class="text-right">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr>
+                <td>{{ tx.date|date:"M d, Y" }}</td>
+                <td>{{ tx.description }}</td>
+                <td>{{ tx.reference }}</td>
+                <td class="text-right">{% if tx.debit %}KES {{ tx.debit|floatformat:2. }}{% endif %}</td>
+                <td class="text-right">{% if tx.credit %}KES {{ tx.credit|floatformat:2. }}{% endif %}</td>
+                <td class="text-right">KES {{ tx.balance|floatformat:2. }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center">No transactions in this period</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="terms">
+    <p>This statement is for informational purposes. Please contact billing for any discrepancies.</p>
+</div>
+{% endblock %}

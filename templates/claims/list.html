@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}My Claims - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">Claims</h1>
+        <p class="page-subtitle">Track and manage your insurance claims</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'claims:create' %}" class="claim-new-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Submit New Claim
+        </a>
+    </div>
+</div>
+
+<!-- Stats Overview -->
+<div class="claims-stats">
+    <div class="claim-stat-card orange">
+        <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-value">{{ status_counts.pending|default:0 }}</span>
+            <span class="stat-label">Pending Review</span>
+        </div>
+    </div>
+    <div class="claim-stat-card blue">
+        <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-value">{{ status_counts.under_review|default:0 }}</span>
+            <span class="stat-label">Under Review</span>
+        </div>
+    </div>
+    <div class="claim-stat-card green">
+        <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-value">{{ status_counts.approved|default:0 }}</span>
+            <span class="stat-label">Approved</span>
+        </div>
+    </div>
+    <div class="claim-stat-card purple">
+        <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <span class="stat-value">{{ status_counts.paid|default:0 }}</span>
+            <span class="stat-label">Paid Out</span>
+        </div>
+    </div>
+</div>
+
+<!-- Claims List -->
+<div class="claims-container">
+    {% if claims %}
+    <div class="claims-list">
+        {% for claim in claims %}
+        <div class="claim-card {% if claim.status == 'rejected' %}rejected{% endif %}">
+            <div class="claim-header">
+                <div class="claim-number">
+                    <span class="claim-id">{{ claim.claim_number }}</span>
+                    <span class="claim-policy">{{ claim.policy.product.name }}</span>
+                </div>
+                <div class="claim-status status-{{ claim.status }}">
+                    {% if claim.status == 'draft' %}
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    {% elif claim.status == 'submitted' or claim.status == 'under_review' %}
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    {% elif claim.status == 'approved' or claim.status == 'paid' %}
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    {% elif claim.status == 'rejected' %}
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    {% endif %}
+                    {{ claim.get_status_display }}
+                </div>
+            </div>
+            <div class="claim-body">
+                <div class="claim-details">
+                    <div class="claim-detail">
+                        <span class="detail-label">Incident Date</span>
+                        <span class="detail-value">{{ claim.incident_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="claim-detail">
+                        <span class="detail-label">Claimed Amount</span>
+                        <span class="detail-value amount">KES {{ claim.claimed_amount|intcomma }}</span>
+                    </div>
+                    {% if claim.approved_amount %}
+                    <div class="claim-detail">
+                        <span class="detail-label">Approved Amount</span>
+                        <span class="detail-value approved">KES {{ claim.approved_amount|intcomma }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="claim-detail">
+                        <span class="detail-label">Submitted</span>
+                        <span class="detail-value">{{ claim.submitted_at|date:"M d, Y"|default:"Not submitted" }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="claim-footer">
+                <div class="claim-meta">
+                    <span class="meta-item">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        {{ claim.policy.policy_number }}
+                    </span>
+                </div>
+                <a href="{% url 'claims:detail' claim.pk %}" class="claim-view-btn">
+                    View Details
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% include 'includes/pagination.html' %}
+    {% else %}
+    <div class="claims-empty">
+        <div class="empty-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="64" height="64">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+        </div>
+        <h3>No Claims Yet</h3>
+        <p>You haven't submitted any insurance claims. When you need to file a claim, we're here to help.</p>
+        <a href="{% url 'claims:create' %}" class="claim-new-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Submit Your First Claim
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Stats Grid */
+.claims-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 900px) {
+    .claims-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+.claim-stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.claim-stat-card.orange .stat-icon { background: #fff7ed; color: #ea580c; }
+.claim-stat-card.blue .stat-icon { background: #eff6ff; color: #2563eb; }
+.claim-stat-card.green .stat-icon { background: #f0fdf4; color: #16a34a; }
+.claim-stat-card.purple .stat-icon { background: #faf5ff; color: #9333ea; }
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+    margin-top: 0.25rem;
+}
+
+/* New Claim Button */
+.claim-new-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
+    color: white;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    transition: all 0.2s;
+}
+
+.claim-new-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+/* Claims List */
+.claims-container {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.claims-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.claim-card {
+    border-bottom: 1px solid var(--color-gray-100);
+    transition: background 0.15s;
+}
+
+.claim-card:hover {
+    background: var(--color-gray-50);
+}
+
+.claim-card:last-child {
+    border-bottom: none;
+}
+
+.claim-card.rejected {
+    background: #fef2f2;
+}
+
+.claim-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.25rem 1.5rem 0.75rem;
+}
+
+.claim-number {
+    display: flex;
+    flex-direction: column;
+}
+
+.claim-id {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-gray-900);
+}
+
+.claim-policy {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+    margin-top: 0.125rem;
+}
+
+.claim-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.claim-status.status-draft { background: #f3f4f6; color: #6b7280; }
+.claim-status.status-submitted { background: #fef3c7; color: #92400e; }
+.claim-status.status-under_review { background: #dbeafe; color: #1e40af; }
+.claim-status.status-approved { background: #dcfce7; color: #166534; }
+.claim-status.status-paid { background: #d1fae5; color: #047857; }
+.claim-status.status-rejected { background: #fee2e2; color: #991b1b; }
+
+.claim-body {
+    padding: 0 1.5rem;
+}
+
+.claim-details {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.claim-detail {
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+}
+
+.detail-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--color-gray-500);
+    letter-spacing: 0.05em;
+}
+
+.detail-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin-top: 0.125rem;
+}
+
+.detail-value.amount {
+    color: var(--color-gray-900);
+}
+
+.detail-value.approved {
+    color: #16a34a;
+}
+
+.claim-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+}
+
+.claim-meta {
+    display: flex;
+    gap: 1rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.claim-view-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.claim-view-btn:hover {
+    background: var(--color-gray-100);
+    border-color: var(--color-gray-300);
+}
+
+/* Empty State */
+.claims-empty {
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.empty-icon {
+    color: var(--color-gray-300);
+    margin-bottom: 1.5rem;
+}
+
+.claims-empty h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0 0 0.5rem;
+}
+
+.claims-empty p {
+    color: var(--color-gray-500);
+    max-width: 400px;
+    margin: 0 auto 1.5rem;
+}
+</style>
+{% endblock %}

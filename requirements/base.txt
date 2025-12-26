@@ -1,0 +1,2 @@
+# Core Django - minimal dependencies
+Django>=5.1,<6.0

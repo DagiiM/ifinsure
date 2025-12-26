@@ -1,0 +1,245 @@
+# =============================================================================
+# iFinsure - Docker Compose Production Configuration
+# =============================================================================
+# 
+# This compose file orchestrates:
+#   - PostgreSQL database
+#   - Redis cache/message broker
+#   - Django application (Gunicorn)
+#   - Nginx reverse proxy
+#   - Certbot for SSL certificates
+#
+# Usage:
+#   docker compose up -d          # Start all services
+#   docker compose logs -f app    # View application logs
+#   docker compose down           # Stop all services
+#
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # PostgreSQL Database
+  # ===========================================================================
+  db:
+    image: postgres:16-alpine
+    container_name: ifinsure_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ifinsure_db}
+      POSTGRES_USER: ${DB_USER:-ifinsure}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ifinsure} -d ${DB_NAME:-ifinsure_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - ifinsure_network
+    ports:
+      - "127.0.0.1:5432:5432"  # Only accessible from localhost
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================================================
+  # Redis Cache & Message Broker
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: ifinsure_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ifinsure_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================================================
+  # Django Application (Gunicorn)
+  # ===========================================================================
+  app:
+    build:
+      context: ..
+      dockerfile: provisioning/Dockerfile
+    image: ifinsure:latest
+    container_name: ifinsure_app
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+    volumes:
+      - ../staticfiles:/app/staticfiles
+      - ../media:/app/media
+      - ../logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ifinsure_network
+    command: >
+      gunicorn config.wsgi:application
+      --bind 0.0.0.0:8000
+      --workers 4
+      --worker-class gthread
+      --threads 2
+      --timeout 120
+      --keep-alive 5
+      --max-requests 1000
+      --max-requests-jitter 100
+      --access-logfile -
+      --error-logfile -
+      --capture-output
+      --enable-stdio-inheritance
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ===========================================================================
+  # Celery Worker (Background Tasks)
+  # ===========================================================================
+  celery:
+    image: ifinsure:latest
+    container_name: ifinsure_celery
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+    volumes:
+      - ../media:/app/media
+      - ../logs:/app/logs
+    depends_on:
+      - app
+      - redis
+    networks:
+      - ifinsure_network
+    command: celery -A config worker -l info --concurrency=2
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ===========================================================================
+  # Celery Beat (Scheduled Tasks)
+  # ===========================================================================
+  celery-beat:
+    image: ifinsure:latest
+    container_name: ifinsure_celery_beat
+    restart: unless-stopped
+    env_file:
+      - ../.env.production
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+    volumes:
+      - ../logs:/app/logs
+    depends_on:
+      - app
+      - redis
+    networks:
+      - ifinsure_network
+    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================================================
+  # Nginx Reverse Proxy
+  # ===========================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: ifinsure_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../staticfiles:/var/www/static:ro
+      - ../media:/var/www/media:ro
+      - ../certbot/conf:/etc/letsencrypt:ro
+      - ../certbot/www:/var/www/certbot:ro
+    depends_on:
+      - app
+    networks:
+      - ifinsure_network
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # ===========================================================================
+  # Certbot (Let's Encrypt SSL)
+  # ===========================================================================
+  certbot:
+    image: certbot/certbot
+    container_name: ifinsure_certbot
+    volumes:
+      - ../certbot/conf:/etc/letsencrypt
+      - ../certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - ifinsure_network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    name: ifinsure_postgres_data
+  redis_data:
+    name: ifinsure_redis_data
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  ifinsure_network:
+    name: ifinsure_network
+    driver: bridge

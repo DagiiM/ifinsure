@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Pending Applications - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Pending Applications</h1>
+    <p>Review and process insurance applications</p>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        {% if applications %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Application #</th>
+                        <th>Applicant</th>
+                        <th>Product</th>
+                        <th>Coverage</th>
+                        <th>Premium</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr>
+                        <td class="font-medium">{{ app.application_number }}</td>
+                        <td>
+                            <div>{{ app.applicant.get_full_name }}</div>
+                            <div class="text-sm text-muted">{{ app.applicant.email }}</div>
+                        </td>
+                        <td>{{ app.product.name }}</td>
+                        <td>KES {{ app.requested_coverage|intcomma }}</td>
+                        <td>
+                            {% if app.calculated_premium %}
+                            KES {{ app.calculated_premium|intcomma }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-{% if app.status == 'submitted' %}info{% else %}warning{% endif %}">
+                                {{ app.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ app.submitted_at|date:"M d, Y"|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'policies:application_review' app.pk %}" class="btn btn-primary btn-sm">Review</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% include 'includes/pagination.html' %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">✓</div>
+            <h3>All Caught Up!</h3>
+            <p>No pending applications to review.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

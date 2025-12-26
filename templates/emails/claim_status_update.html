@@ -1,0 +1,120 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}Claim Update - ifinsure{% endblock %}
+
+{% block content %}
+<p class="email-greeting">Update on Your Claim </p>
+
+<p class="email-text">
+    Dear {{ user.first_name }},
+</p>
+
+<p class="email-text">
+    There has been an update to your claim. Please review the details below.
+</p>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Claim Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Claim Number</span>
+        <span class="highlight-value">{{ claim.claim_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Previous Status</span>
+        <span class="highlight-value">{{ previous_status }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">New Status</span>
+        <span class="highlight-value">
+            <span class="status-badge 
+                {% if claim.status == 'approved' %}status-success
+                {% elif claim.status == 'rejected' %}status-danger
+                {% elif claim.status == 'processing' %}status-info
+                {% else %}status-warning{% endif %}">
+                {{ claim.get_status_display }}
+            </span>
+        </span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Updated On</span>
+        <span class="highlight-value">{{ claim.updated_at|date:"F d, Y H:i" }}</span>
+    </div>
+</div>
+
+{% if status_message %}
+<div class="alert {% if claim.status == 'approved' %}alert-success{% elif claim.status == 'rejected' %}alert-danger{% else %}alert-info{% endif %}">
+    <strong>Message from Claims Team:</strong><br>
+    {{ status_message }}
+</div>
+{% endif %}
+
+{% if claim.status == 'information_required' %}
+<p class="email-text">
+    <strong>Action Required:</strong> Our claims team needs additional information to continue processing your claim.
+</p>
+
+<ul style="color: #4b5563; margin: 16px 0 24px 20px;">
+    {% for item in required_items %}
+    <li style="margin-bottom: 8px;">{{ item }}</li>
+    {% empty %}
+    <li style="margin-bottom: 8px;">Please log in to view the required documents/information</li>
+    {% endfor %}
+</ul>
+
+<div class="alert alert-warning">
+    Please provide the requested information within 14 days to avoid delays.
+</div>
+{% endif %}
+
+{% if claim.status == 'approved' %}
+<div class="alert alert-success">
+     <strong>Congratulations!</strong> Your claim has been approved. Payment will be processed shortly.
+</div>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Settlement Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Approved Amount</span>
+        <span class="highlight-value">KES {{ claim.amount_approved|floatformat:0|intcomma }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Payment Method</span>
+        <span class="highlight-value">{{ payment_method|default:"Bank Transfer" }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Expected Payment Date</span>
+        <span class="highlight-value">{{ expected_payment_date|date:"F d, Y"|default:"Within 5-7 business days" }}</span>
+    </div>
+</div>
+{% endif %}
+
+{% if claim.status == 'rejected' %}
+<div class="alert alert-danger">
+    We regret to inform you that your claim has not been approved.
+</div>
+
+{% if rejection_reason %}
+<p class="email-text">
+    <strong>Reason:</strong><br>
+    {{ rejection_reason }}
+</p>
+{% endif %}
+
+<p class="email-text">
+    If you believe this decision was made in error, you may appeal within 30 days. Please contact our claims team for more information.
+</p>
+{% endif %}
+
+<div class="button-container">
+    <a href="{{ site_url }}/claims/{{ claim.pk }}/" class="button">View Full Details</a>
+</div>
+
+<p class="email-text">
+    If you have any questions about this update, please contact our claims team.
+</p>
+
+<p class="email-text">
+    Best regards,<br>
+    <strong>The ifinsure Claims Team</strong>
+</p>
+{% endblock %}

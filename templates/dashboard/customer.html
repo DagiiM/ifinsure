@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Dashboard - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Welcome back, {{ user.get_short_name }}</h1>
+    <p>Here's an overview of your insurance portfolio</p>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-4 gap-4 mb-6">
+    <div class="stat-card">
+        <div class="stat-card-label">Active Policies</div>
+        <div class="stat-card-value">{{ policy_count }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Total Coverage</div>
+        <div class="stat-card-value">KES {{ total_coverage|intcomma }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Pending Claims</div>
+        <div class="stat-card-value">{{ pending_claims }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Amount Due</div>
+        <div class="stat-card-value {% if total_due > 0 %}text-danger{% endif %}">KES {{ total_due|intcomma }}</div>
+    </div>
+</div>
+
+<div class="grid grid-2 gap-6">
+    <!-- Active Policies -->
+    <div class="card">
+        <div class="card-header flex justify-between items-center">
+            <h4>My Policies</h4>
+            <a href="{% url 'policies:list' %}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body p-0">
+            {% if active_policies %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Policy</th>
+                        <th>Product</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for policy in active_policies %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'policies:detail' policy.pk %}">{{ policy.policy_number }}</a>
+                        </td>
+                        <td>{{ policy.product.name }}</td>
+                        <td>
+                            <span class="badge badge-{% if policy.status == 'active' %}success{% elif policy.status == 'pending' %}warning{% else %}default{% endif %}">
+                                {{ policy.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No active policies yet.</p>
+                <a href="{% url 'policies:products' %}" class="btn btn-primary btn-sm">Browse Products</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Recent Claims -->
+    <div class="card">
+        <div class="card-header flex justify-between items-center">
+            <h4>Recent Claims</h4>
+            <a href="{% url 'claims:list' %}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body p-0">
+            {% if recent_claims %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Claim</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for claim in recent_claims %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'claims:detail' claim.pk %}">{{ claim.claim_number }}</a>
+                        </td>
+                        <td>KES {{ claim.claimed_amount|intcomma }}</td>
+                        <td>
+                            <span class="badge badge-{% if claim.status == 'approved' or claim.status == 'paid' %}success{% elif claim.status == 'rejected' %}danger{% elif claim.status == 'submitted' or claim.status == 'under_review' %}warning{% else %}default{% endif %}">
+                                {{ claim.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No claims submitted yet.</p>
+                <a href="{% url 'claims:create' %}" class="btn btn-secondary btn-sm">Submit Claim</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Pending Invoices -->
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header flex justify-between items-center">
+            <h4>Pending Invoices</h4>
+            <a href="{% url 'billing:invoices' %}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body p-0">
+            {% if pending_invoices %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Invoice</th>
+                        <th>Policy</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in pending_invoices %}
+                    <tr>
+                        <td>{{ invoice.invoice_number }}</td>
+                        <td>{{ invoice.policy.policy_number|default:"-" }}</td>
+                        <td>KES {{ invoice.balance|intcomma }}</td>
+                        <td>{{ invoice.due_date|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="badge badge-{% if invoice.status == 'overdue' %}danger{% elif invoice.status == 'partial' %}warning{% else %}default{% endif %}">
+                                {{ invoice.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'billing:pay' invoice.pk %}" class="btn btn-primary btn-sm">Pay</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No pending invoices. You're all caught up!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if expiring_soon > 0 %}
+<div class="alert alert-warning mt-6">
+    <strong>Attention:</strong> You have {{ expiring_soon }} polic{{ expiring_soon|pluralize:"y,ies" }} expiring within the next 30 days.
+    <a href="{% url 'policies:list' %}?status=active">View details</a>
+</div>
+{% endif %}
+
+{% if overdue_count > 0 %}
+<div class="alert alert-danger mt-4">
+    <strong>Payment Required:</strong> You have {{ overdue_count }} overdue invoice{{ overdue_count|pluralize }}.
+    <a href="{% url 'billing:invoices' %}?status=overdue">Pay now</a>
+</div>
+{% endif %}
+{% endblock %}

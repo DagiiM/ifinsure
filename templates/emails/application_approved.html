@@ -1,0 +1,72 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}Application Approved - ifinsure{% endblock %}
+
+{% block content %}
+<p class="email-greeting">Great News! Your Application is Approved! </p>
+
+<p class="email-text">
+    Dear {{ user.first_name }},
+</p>
+
+<p class="email-text">
+    Congratulations! We're pleased to inform you that your insurance application has been <strong>approved</strong>.
+</p>
+
+<div class="alert alert-success">
+     Your application has been approved and is ready for activation!
+</div>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Application Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Application Number</span>
+        <span class="highlight-value">{{ application.application_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Product</span>
+        <span class="highlight-value">{{ application.product.name }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Coverage Amount</span>
+        <span class="highlight-value">KES {{ application.product.coverage_amount|floatformat:0|intcomma }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Premium Amount</span>
+        <span class="highlight-value">KES {{ application.product.premium_amount|floatformat:0|intcomma }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Status</span>
+        <span class="highlight-value">
+            <span class="status-badge status-success">Approved</span>
+        </span>
+    </div>
+</div>
+
+<p class="email-text">
+    <strong>Next Steps:</strong>
+</p>
+
+<ul style="color: #4b5563; margin: 16px 0 24px 20px;">
+    <li style="margin-bottom: 8px;">1. Complete the premium payment to activate your policy</li>
+    <li style="margin-bottom: 8px;">2. Your policy certificate will be generated automatically</li>
+    <li style="margin-bottom: 8px;">3. Coverage begins immediately upon payment confirmation</li>
+</ul>
+
+<div class="button-container">
+    <a href="{{ site_url }}/billing/invoices/" class="button">Pay Premium Now</a>
+</div>
+
+<div class="alert alert-warning">
+    <strong>Important:</strong> Please complete your payment within 7 days to ensure your coverage is activated.
+</div>
+
+<p class="email-text">
+    Thank you for choosing ifinsure for your insurance needs. We're committed to providing you with excellent coverage and service.
+</p>
+
+<p class="email-text">
+    Best regards,<br>
+    <strong>The ifinsure Team</strong>
+</p>
+{% endblock %}

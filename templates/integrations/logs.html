@@ -1,0 +1,586 @@
+{% extends 'base.html' %}
+
+{% block title %}Integration Logs - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'integrations:dashboard' %}">Integrations</a>
+            <span>›</span>
+            <span>Activity Logs</span>
+        </nav>
+        <h1 class="page-title">Integration Activity Logs</h1>
+        <p class="page-subtitle">Monitor and debug integration activities</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="logs-filter-card">
+    <form method="get" class="logs-filter-form">
+        <div class="filter-group">
+            <label>Provider</label>
+            <select name="provider">
+                <option value="">All Providers</option>
+                {% for provider in providers %}
+                <option value="{{ provider.id }}" {% if request.GET.provider == provider.id|stringformat:"s" %}selected{% endif %}>
+                    {{ provider.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Status</label>
+            <select name="status">
+                <option value="">All Statuses</option>
+                <option value="success" {% if request.GET.status == 'success' %}selected{% endif %}>Success</option>
+                <option value="failed" {% if request.GET.status == 'failed' %}selected{% endif %}>Failed</option>
+                <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Date Range</label>
+            <select name="date_range">
+                <option value="today" {% if request.GET.date_range == 'today' %}selected{% endif %}>Today</option>
+                <option value="week" {% if request.GET.date_range == 'week' or not request.GET.date_range %}selected{% endif %}>Last 7 days</option>
+                <option value="month" {% if request.GET.date_range == 'month' %}selected{% endif %}>Last 30 days</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="filter-btn primary">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+                Filter
+            </button>
+            {% if request.GET %}
+            <a href="{% url 'integrations:logs' %}" class="filter-btn">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Stats -->
+<div class="logs-stats">
+    <div class="logs-stat">
+        <span class="logs-stat-value">{{ stats.total|default:0 }}</span>
+        <span class="logs-stat-label">Total Requests</span>
+    </div>
+    <div class="logs-stat success">
+        <span class="logs-stat-value">{{ stats.success|default:0 }}</span>
+        <span class="logs-stat-label">Successful</span>
+    </div>
+    <div class="logs-stat failed">
+        <span class="logs-stat-value">{{ stats.failed|default:0 }}</span>
+        <span class="logs-stat-label">Failed</span>
+    </div>
+    <div class="logs-stat">
+        <span class="logs-stat-value">{{ stats.avg_response|default:0 }}ms</span>
+        <span class="logs-stat-label">Avg Response</span>
+    </div>
+</div>
+
+<!-- Logs Table -->
+<div class="logs-table-card">
+    {% if logs %}
+    <table class="logs-table">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Provider</th>
+                <th>Action</th>
+                <th>Reference</th>
+                <th>Status</th>
+                <th>Response</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr class="{% if log.status == 'failed' %}row-failed{% endif %}">
+                <td class="col-time">
+                    <span class="log-date">{{ log.created_at|date:"M d, Y" }}</span>
+                    <span class="log-time">{{ log.created_at|time:"H:i:s" }}</span>
+                </td>
+                <td class="col-provider">
+                    <span class="provider-name">{{ log.config.provider.name }}</span>
+                    <span class="config-name">{{ log.config.name }}</span>
+                </td>
+                <td><code class="action-code">{{ log.action }}</code></td>
+                <td class="col-ref">
+                    {% if log.reference_id %}
+                    <code class="ref-code">{{ log.reference_id|truncatechars:20 }}</code>
+                    {% else %}
+                    <span class="no-ref">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="log-status {% if log.status == 'success' %}success{% elif log.status == 'failed' %}failed{% else %}pending{% endif %}">
+                        {{ log.status }}
+                    </span>
+                </td>
+                <td class="col-response">{{ log.response_time_ms|default:"-" }} ms</td>
+                <td>
+                    <button onclick="showLogDetails({{ log.pk }})" class="details-btn">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% include 'includes/pagination.html' %}
+    {% else %}
+    <div class="logs-empty">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        <h3>No Logs Found</h3>
+        <p>No integration activity matches your criteria.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Log Details Modal -->
+<div id="logDetailsModal" class="log-modal" style="display: none;">
+    <div class="log-modal-content">
+        <div class="log-modal-header">
+            <h3>Log Details</h3>
+            <button onclick="closeLogDetails()" class="log-modal-close">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="log-modal-body" id="logDetailsBody">
+            <div class="loading-state">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-600);
+}
+
+.breadcrumb span {
+    color: var(--color-gray-400);
+}
+
+/* Filters */
+.logs-filter-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.logs-filter-form {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 150px;
+}
+
+.filter-group label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-gray-600);
+}
+
+.filter-group select {
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 10px;
+    font-size: 0.875rem;
+    background: white;
+}
+
+.filter-group select:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 10px;
+    background: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.filter-btn:hover {
+    background: var(--color-gray-50);
+}
+
+.filter-btn.primary {
+    background: var(--color-primary-600);
+    border-color: var(--color-primary-600);
+    color: white;
+}
+
+.filter-btn.primary:hover {
+    background: var(--color-primary-700);
+}
+
+/* Stats */
+.logs-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 700px) {
+    .logs-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+.logs-stat {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.logs-stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+}
+
+.logs-stat.success .logs-stat-value { color: #16a34a; }
+.logs-stat.failed .logs-stat-value { color: #dc2626; }
+
+.logs-stat-label {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+/* Table */
+.logs-table-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.logs-table th {
+    text-align: left;
+    padding: 0.875rem 1rem;
+    background: var(--color-gray-50);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.logs-table td {
+    padding: 0.875rem 1rem;
+    border-top: 1px solid var(--color-gray-100);
+    font-size: 0.875rem;
+    vertical-align: middle;
+}
+
+.logs-table tr.row-failed {
+    background: #fef2f2;
+}
+
+.col-time {
+    display: flex;
+    flex-direction: column;
+}
+
+.log-date {
+    font-weight: 500;
+    color: var(--color-gray-900);
+    font-size: 0.8rem;
+}
+
+.log-time {
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+}
+
+.col-provider {
+    display: flex;
+    flex-direction: column;
+}
+
+.provider-name {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.config-name {
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+}
+
+.action-code {
+    background: var(--color-gray-100);
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: monospace;
+}
+
+.ref-code {
+    font-size: 0.7rem;
+    font-family: monospace;
+    color: var(--color-gray-600);
+}
+
+.no-ref {
+    color: var(--color-gray-300);
+}
+
+.col-response {
+    color: var(--color-gray-500);
+    font-size: 0.8rem;
+}
+
+.log-status {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
+    border-radius: 50px;
+}
+
+.log-status.success { background: #dcfce7; color: #166534; }
+.log-status.failed { background: #fee2e2; color: #991b1b; }
+.log-status.pending { background: #fef3c7; color: #92400e; }
+
+.details-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    background: white;
+    color: var(--color-gray-500);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.details-btn:hover {
+    background: var(--color-primary-50);
+    border-color: var(--color-primary-200);
+    color: var(--color-primary-600);
+}
+
+/* Empty State */
+.logs-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--color-gray-400);
+}
+
+.logs-empty svg {
+    margin-bottom: 1rem;
+}
+
+.logs-empty h3 {
+    color: var(--color-gray-600);
+    margin: 0 0 0.5rem;
+}
+
+.logs-empty p {
+    margin: 0;
+}
+
+/* Modal */
+.log-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.log-modal-content {
+    background: white;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 700px;
+    max-height: 90vh;
+    overflow: auto;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+}
+
+.log-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    position: sticky;
+    top: 0;
+    background: white;
+}
+
+.log-modal-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.log-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: var(--color-gray-100);
+    border-radius: 10px;
+    color: var(--color-gray-500);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.log-modal-close:hover {
+    background: var(--color-gray-200);
+    color: var(--color-gray-700);
+}
+
+.log-modal-body {
+    padding: 1.5rem;
+}
+
+.log-detail-section {
+    margin-bottom: 1.5rem;
+}
+
+.log-detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.log-detail-section h5 {
+    margin: 0 0 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.log-detail-section pre {
+    background: var(--color-gray-50);
+    padding: 1rem;
+    border-radius: 12px;
+    overflow-x: auto;
+    font-size: 0.8rem;
+    margin: 0;
+    font-family: 'SF Mono', Monaco, monospace;
+}
+
+.error-message {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    padding: 1rem;
+    border-radius: 12px;
+    color: #b91c1c;
+    font-size: 0.875rem;
+}
+
+.loading-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--color-gray-400);
+}
+</style>
+
+<script>
+function showLogDetails(logId) {
+    document.getElementById('logDetailsModal').style.display = 'flex';
+    
+    fetch(`/integrations/logs/${logId}/`)
+        .then(response => response.json())
+        .then(data => {
+            const body = document.getElementById('logDetailsBody');
+            body.innerHTML = `
+                <div class="log-detail-section">
+                    <h5>Request Data</h5>
+                    <pre>${JSON.stringify(data.request_data, null, 2)}</pre>
+                </div>
+                <div class="log-detail-section">
+                    <h5>Response Data</h5>
+                    <pre>${JSON.stringify(data.response_data, null, 2)}</pre>
+                </div>
+                ${data.error_message ? `
+                <div class="log-detail-section">
+                    <h5>Error</h5>
+                    <div class="error-message">${data.error_message}</div>
+                </div>
+                ` : ''}
+            `;
+        })
+        .catch(error => {
+            document.getElementById('logDetailsBody').innerHTML = `
+                <div class="error-message">Failed to load log details</div>
+            `;
+        });
+}
+
+function closeLogDetails() {
+    document.getElementById('logDetailsModal').style.display = 'none';
+    document.getElementById('logDetailsBody').innerHTML = '<div class="loading-state">Loading...</div>';
+}
+</script>
+{% endblock %}

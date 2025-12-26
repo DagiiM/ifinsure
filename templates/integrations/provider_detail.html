@@ -1,0 +1,503 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ provider.name }} - Integrations - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="{% url 'integrations:dashboard' %}" class="breadcrumb-link">Integrations</a>
+        <span class="breadcrumb-sep">→</span>
+        <a href="{% url 'integrations:category' provider.category.slug %}" class="breadcrumb-link">{{ provider.category.get_name_display }}</a>
+        <span class="breadcrumb-sep">→</span>
+        <span class="breadcrumb-current">{{ provider.name }}</span>
+    </div>
+    <h1.>{{ provider.name }}</h1.>
+    <p>{{ provider.description }}</p>
+</div>
+
+<div class="provider-layout">
+    <!-- Main Content -->
+    <div class="provider-main">
+        <!-- Provider Info Card -->
+        <div class="card mb-6">
+            <div class="card-header">
+                <h3.>Provider Information</h3.>
+            </div>
+            <div class="card-body">
+                <div class="provider-header">
+                    {% if provider.logo %}
+                    <img src="{{ provider.logo.url }}" alt="{{ provider.name }}" class="provider-logo">
+                    {% else %}
+                    <div class="provider-logo-placeholder">{{ provider.name|slice:":2."|upper }}</div>
+                    {% endif %}
+                    <div class="provider-meta">
+                        <h2.>{{ provider.name }}</h2.>
+                        <p class="text-muted">{{ provider.description }}</p>
+                        <div class="provider-links mt-3.">
+                            {% if provider.website_url %}
+                            <a href="{{ provider.website_url }}" target="_blank" class="text-link">
+                                 Official Website
+                            </a>
+                            {% endif %}
+                            {% if provider.documentation_url %}
+                            <a href="{{ provider.documentation_url }}" target="_blank" class="text-link">
+                                 Documentation
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-grid mt-6">
+                    <div class="feature-item">
+                        <span class="feature-icon {% if provider.supports_webhooks %}success{% else %}muted{% endif %}">
+                            {% if provider.supports_webhooks %}{% else %}{% endif %}
+                        </span>
+                        <span class="feature-label">Webhooks Support</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon {% if provider.supports_sandbox %}success{% else %}muted{% endif %}">
+                            {% if provider.supports_sandbox %}{% else %}{% endif %}
+                        </span>
+                        <span class="feature-label">Sandbox/Test Mode</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon {% if provider.is_available %}success{% else %}warning{% endif %}">
+                            {% if provider.is_available %}{% else %}{% endif %}
+                        </span>
+                        <span class="feature-label">{% if provider.is_available %}Available{% else %}Coming Soon{% endif %}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supported Countries -->
+        {% if provider.countries %}
+        <div class="card mb-6">
+            <div class="card-header">
+                <h3.>Supported Countries</h3.>
+            </div>
+            <div class="card-body">
+                <div class="country-tags">
+                    {% for country in provider.countries %}
+                    <span class="country-tag">{{ country }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Configuration Requirements -->
+        <div class="card mb-6">
+            <div class="card-header">
+                <h3.>Configuration Requirements</h3.>
+            </div>
+            <div class="card-body">
+                {% if provider.config_schema %}
+                <div class="config-requirements">
+                    <p class="text-muted mb-4.">The following credentials and settings are required to configure {{ provider.name }}:</p>
+                    <ul class="config-list">
+                        {% for field, config in provider.config_schema.items %}
+                        <li class="config-item">
+                            <span class="config-field">{{ field }}</span>
+                            <span class="config-type">{{ config.type|default:"string" }}</span>
+                            {% if config.required %}
+                            <span class="badge badge-warning">Required</span>
+                            {% endif %}
+                            {% if config.description %}
+                            <p class="config-desc">{{ config.description }}</p>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% else %}
+                <p class="text-muted">Configuration schema not available.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Active Configurations -->
+        <div class="card">
+            <div class="card-header">
+                <h3.>Your Configurations</h3.>
+                <a href="{% url 'integrations:configure' provider.slug %}" class="btn btn-primary btn-sm">
+                    + Add Configuration
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if configs %}
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Environment</th>
+                                <th>Status</th>
+                                <th>Last Tested</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for config in configs %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'integrations:config_detail' config.pk %}">{{ config.name }}</a>
+                                    {% if config.is_primary %}
+                                    <span class="badge badge-primary ml-2.">Primary</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge badge-{% if config.environment == 'production' %}success{% else %}info{% endif %}">
+                                        {{ config.get_environment_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if config.is_enabled %}
+                                    <span class="status-dot success"></span> Active
+                                    {% else %}
+                                    <span class="status-dot muted"></span> Disabled
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if config.last_tested_at %}
+                                    <span class="{% if config.last_test_status == 'success' %}text-success{% else %}text-danger{% endif %}">
+                                        {{ config.last_tested_at|timesince }} ago
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="{% url 'integrations:config_detail' config.pk %}" class="btn btn-sm btn-ghost" title="View">
+                                            
+                                        </a>
+                                        <button class="btn btn-sm btn-ghost" title="Test Connection" 
+                                                onclick="testConnection({{ config.pk }})">
+                                            
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-8">
+                    <div class="empty-state-icon"></div>
+                    <h4.>No Configurations Yet</h4.>
+                    <p class="text-muted">You haven't configured {{ provider.name }} yet.</p>
+                    <a href="{% url 'integrations:configure' provider.slug %}" class="btn btn-primary mt-4.">
+                        Configure {{ provider.name }}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="provider-sidebar">
+        <!-- Quick Start Card -->
+        <div class="card mb-4.">
+            <div class="card-header">
+                <h4.>Quick Start</h4.>
+            </div>
+            <div class="card-body">
+                <ol class="quick-start-steps">
+                    <li>Obtain API credentials from {{ provider.name }}</li>
+                    <li>Add a new configuration</li>
+                    <li>Test the connection</li>
+                    <li>Enable for production use</li>
+                </ol>
+                <a href="{% url 'integrations:configure' provider.slug %}" class="btn btn-primary btn-block mt-4.">
+                    Start Configuration
+                </a>
+            </div>
+        </div>
+
+        <!-- Help Card -->
+        <div class="card">
+            <div class="card-header">
+                <h4.>Need Help?</h4.>
+            </div>
+            <div class="card-body">
+                <ul class="help-links">
+                    {% if provider.documentation_url %}
+                    <li><a href="{{ provider.documentation_url }}" target="_blank"> Official Documentation</a></li>
+                    {% endif %}
+                    <li><a href="#"> Integration Guide</a></li>
+                    <li><a href="#"> FAQs</a></li>
+                    <li><a href="#"> Contact Support</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.provider-layout {
+    display: grid;
+    grid-template-columns: 1.fr 300px;
+    gap: var(--spacing-6);
+}
+
+@media (max-width: 992.px) {
+    .provider-layout {
+        grid-template-columns: 1.fr;
+    }
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2.);
+    margin-bottom: var(--spacing-3);
+    font-size: var(--font-size-sm);
+}
+
+.breadcrumb-link {
+    color: var(--color-primary-600);
+    text-decoration: none;
+}
+
+.breadcrumb-sep {
+    color: var(--color-gray-4.00);
+}
+
+.breadcrumb-current {
+    color: var(--color-gray-600);
+}
+
+.provider-header {
+    display: flex;
+    gap: var(--spacing-5);
+    align-items: flex-start;
+}
+
+.provider-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: var(--radius-lg);
+    background: var(--color-gray-50);
+    padding: var(--spacing-2.);
+}
+
+.provider-logo-placeholder {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary-1.00);
+    color: var(--color-primary-600);
+    font-weight: 700;
+    font-size: var(--font-size-2.xl);
+    border-radius: var(--radius-lg);
+}
+
+.provider-meta h2. {
+    margin: 0 0 var(--spacing-2.);
+}
+
+.provider-links {
+    display: flex;
+    gap: var(--spacing-4.);
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(1.80px, 1.fr));
+    gap: var(--spacing-3);
+    padding-top: var(--spacing-6);
+    border-top: 1.px solid var(--color-gray-2.00);
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2.);
+}
+
+.feature-icon {
+    width: 2.4.px;
+    height: 2.4.px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: var(--font-size-xs);
+}
+
+.feature-icon.success {
+    background: var(--color-success-1.00);
+    color: var(--color-success-600);
+}
+
+.feature-icon.muted {
+    background: var(--color-gray-1.00);
+    color: var(--color-gray-4.00);
+}
+
+.feature-icon.warning {
+    background: var(--color-warning-100);
+    color: var(--color-warning-600);
+}
+
+.country-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2.);
+}
+
+.country-tag {
+    padding: var(--spacing-1.) var(--spacing-3);
+    background: var(--color-gray-1.00);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+}
+
+.config-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.config-item {
+    padding: var(--spacing-3) 0;
+    border-bottom: 1.px solid var(--color-gray-1.00);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-2.);
+}
+
+.config-item:last-child {
+    border-bottom: none;
+}
+
+.config-field {
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.config-type {
+    color: var(--color-gray-500);
+    font-size: var(--font-size-sm);
+}
+
+.config-desc {
+    width: 1.00%;
+    margin: var(--spacing-1.) 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-600);
+}
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: var(--spacing-1.);
+}
+
+.status-dot.success {
+    background: var(--color-success-500);
+}
+
+.status-dot.muted {
+    background: var(--color-gray-4.00);
+}
+
+.quick-start-steps {
+    padding-left: var(--spacing-4.);
+    margin: 0;
+}
+
+.quick-start-steps li {
+    padding: var(--spacing-2.) 0;
+    color: var(--color-gray-600);
+}
+
+.help-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.help-links li {
+    padding: var(--spacing-2.) 0;
+    border-bottom: 1.px solid var(--color-gray-1.00);
+}
+
+.help-links li:last-child {
+    border-bottom: none;
+}
+
+.help-links a {
+    color: var(--color-gray-700);
+    text-decoration: none;
+}
+
+.help-links a:hover {
+    color: var(--color-primary-600);
+}
+
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-1.);
+}
+
+.btn-ghost {
+    background: transparent;
+    border: none;
+    padding: var(--spacing-1.) var(--spacing-2.);
+    cursor: pointer;
+}
+
+.btn-ghost:hover {
+    background: var(--color-gray-1.00);
+    border-radius: var(--radius-md);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3.,
+.card-header h4. {
+    margin: 0;
+}
+</style>
+
+<script>
+function testConnection(configId) {
+    if (!confirm('Test connection for this configuration?')) return;
+    
+    fetch(`/integrations/config/${configId}/test/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(' Connection successful!');
+        } else {
+            alert(' Connection failed: ' + data.message);
+        }
+        location.reload();
+    })
+    .catch(error => {
+        alert('Error testing connection: ' + error);
+    });
+}
+</script>
+{% endblock %}

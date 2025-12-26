@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Agent Dashboard - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Agent Dashboard</h1>
+    <p>Manage your portfolio and process applications</p>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-4 gap-4 mb-6">
+    <div class="stat-card">
+        <div class="stat-card-label">Active Policies</div>
+        <div class="stat-card-value">{{ total_policies }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Portfolio Value</div>
+        <div class="stat-card-value">KES {{ policies_value|intcomma }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Pending Applications</div>
+        <div class="stat-card-value {% if pending_app_count > 0 %}text-warning{% endif %}">{{ pending_app_count }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Claims to Review</div>
+        <div class="stat-card-value {% if pending_claim_count > 0 %}text-warning{% endif %}">{{ pending_claim_count }}</div>
+    </div>
+</div>
+
+<div class="grid grid-2 gap-6">
+    <!-- Pending Applications -->
+    <div class="card">
+        <div class="card-header flex justify-between items-center">
+            <h4>Pending Applications</h4>
+            <a href="{% url 'policies:agent_applications' %}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body p-0">
+            {% if pending_applications %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Application</th>
+                        <th>Applicant</th>
+                        <th>Product</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in pending_applications %}
+                    <tr>
+                        <td>{{ app.application_number }}</td>
+                        <td>{{ app.applicant.get_full_name }}</td>
+                        <td>{{ app.product.name }}</td>
+                        <td>
+                            <a href="{% url 'policies:application_review' app.pk %}" class="btn btn-primary btn-sm">Review</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No pending applications.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Pending Claims -->
+    <div class="card">
+        <div class="card-header flex justify-between items-center">
+            <h4>Claims to Review</h4>
+            <a href="{% url 'claims:staff_list' %}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body p-0">
+            {% if pending_claims %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Claim</th>
+                        <th>Claimant</th>
+                        <th>Amount</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for claim in pending_claims %}
+                    <tr>
+                        <td>{{ claim.claim_number }}</td>
+                        <td>{{ claim.claimant.get_full_name }}</td>
+                        <td>KES {{ claim.claimed_amount|intcomma }}</td>
+                        <td>
+                            <a href="{% url 'claims:staff_detail' claim.pk %}" class="btn btn-primary btn-sm">Review</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No claims pending review.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Recent Policies -->
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header flex justify-between items-center">
+            <h4>Recent Policies</h4>
+            <a href="{% url 'policies:agent_policies' %}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body p-0">
+            {% if recent_policies %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Policy</th>
+                        <th>Customer</th>
+                        <th>Product</th>
+                        <th>Premium</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for policy in recent_policies %}
+                    <tr>
+                        <td>{{ policy.policy_number }}</td>
+                        <td>{{ policy.customer.get_full_name }}</td>
+                        <td>{{ policy.product.name }}</td>
+                        <td>KES {{ policy.premium_amount|intcomma }}</td>
+                        <td>
+                            <span class="badge badge-{% if policy.status == 'active' %}success{% elif policy.status == 'pending' %}warning{% else %}default{% endif %}">
+                                {{ policy.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ policy.created_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No policies in your portfolio yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if expiring_policies > 0 %}
+<div class="alert alert-warning mt-6">
+    <strong>Attention:</strong> {{ expiring_policies }} polic{{ expiring_policies|pluralize:"y,ies" }} in your portfolio {{ expiring_policies|pluralize:"is,are" }} expiring within 30 days.
+    <a href="{% url 'policies:agent_policies' %}">View details</a>
+</div>
+{% endif %}
+{% endblock %}

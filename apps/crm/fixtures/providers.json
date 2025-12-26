@@ -1,0 +1,50 @@
+[
+    {
+        "model": "crm.insuranceprovider",
+        "pk": "a0000000-0000-0000-0000-000000000001",
+        "fields": {
+            "name": "Britam Insurance",
+            "code": "BRITAM",
+            "email": "info@britam.com",
+            "phone": "+254 700 000000",
+            "is_active": true,
+            "visibility": "public",
+            "is_published": true,
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "notifications_enabled": true,
+            "consent_given": false,
+            "is_anonymized": false,
+            "allowed_users": [],
+            "allowed_groups": [],
+            "watchers": [],
+            "provider_type": "underwriter",
+            "primary_color": "#ff0000",
+            "api_enabled": false
+        }
+    },
+    {
+        "model": "crm.insuranceprovider",
+        "pk": "a0000000-0000-0000-0000-000000000002",
+        "fields": {
+            "name": "Jubilee Insurance",
+            "code": "JUBILEE",
+            "email": "contact@jubilee.com",
+            "phone": "+254 711 111111",
+            "is_active": true,
+            "visibility": "public",
+            "is_published": true,
+            "created_at": "2025-01-01T00:00:00Z",
+            "updated_at": "2025-01-01T00:00:00Z",
+            "notifications_enabled": true,
+            "consent_given": false,
+            "is_anonymized": false,
+            "allowed_users": [],
+            "allowed_groups": [],
+            "watchers": [],
+            "provider_type": "underwriter",
+            "primary_color": "#0000ff",
+            "api_enabled": false
+        }
+    }
+]

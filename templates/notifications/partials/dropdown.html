@@ -1,0 +1,171 @@
+<!-- Notification Dropdown Partial -->
+<div class="notification-dropdown">
+    <div class="dropdown-header">
+        <h4>Notifications</h4>
+        {% if unread_count > 0 %}
+        <span class="badge">{{ unread_count }}</span>
+        {% endif %}
+    </div>
+    
+    <div class="dropdown-content">
+        {% if notifications %}
+            {% for notification in notifications %}
+            <a href="{% url 'notifications:detail' notification.id %}" class="dropdown-item {% if not notification.is_read %}unread{% endif %}">
+                <div class="item-icon {{ notification.get_icon_class }}">
+                    {% if notification.notification_type == 'success' %}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    {% elif notification.notification_type == 'warning' %}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    </svg>
+                    {% else %}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    {% endif %}
+                </div>
+                <div class="item-content">
+                    <p class="item-title">{{ notification.title }}</p>
+                    <span class="item-time">{{ notification.time_since_created }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="dropdown-empty">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <p>No notifications</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="dropdown-footer">
+        <a href="{% url 'notifications:list' %}">View all notifications</a>
+    </div>
+</div>
+
+<style>
+.notification-dropdown {
+    width: 360px;
+    background: var(--color-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.dropdown-header h4 {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-gray-900);
+    margin: 0;
+}
+
+.dropdown-header .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 var(--spacing-1);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    background: var(--color-primary-500);
+    color: var(--color-white);
+    border-radius: var(--radius-full);
+}
+
+.dropdown-content {
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    padding: var(--spacing-3) var(--spacing-4);
+    text-decoration: none;
+    transition: background var(--transition-base);
+}
+
+.dropdown-item:hover {
+    background: var(--color-gray-50);
+}
+
+.dropdown-item.unread {
+    background: var(--color-primary-50);
+}
+
+.dropdown-item .item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--color-gray-100);
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+
+.dropdown-item .item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.dropdown-item .item-title {
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-900);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.dropdown-item .item-time {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+}
+
+.dropdown-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-6);
+    text-align: center;
+    color: var(--color-gray-400);
+}
+
+.dropdown-empty p {
+    font-size: var(--font-size-sm);
+    margin: var(--spacing-2) 0 0;
+}
+
+.dropdown-footer {
+    padding: var(--spacing-3) var(--spacing-4);
+    border-top: 1px solid var(--color-gray-200);
+    text-align: center;
+}
+
+.dropdown-footer a {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-primary-600);
+    text-decoration: none;
+}
+
+.dropdown-footer a:hover {
+    text-decoration: underline;
+}
+</style>

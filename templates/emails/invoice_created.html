@@ -1,0 +1,78 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}Invoice Ready - ifinsure{% endblock %}
+
+{% block content %}
+<p class="email-greeting">New Invoice Available </p>
+
+<p class="email-text">
+    Dear {{ user.first_name }},
+</p>
+
+<p class="email-text">
+    A new invoice has been generated for your insurance policy. Please find the details below.
+</p>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Invoice Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Invoice Number</span>
+        <span class="highlight-value">{{ invoice.invoice_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Policy</span>
+        <span class="highlight-value">{{ invoice.policy.policy_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Description</span>
+        <span class="highlight-value">{{ invoice.description }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Amount Due</span>
+        <span class="highlight-value" style="font-size: 1.8px; color: #1.f2.93.7;">KES {{ invoice.total_amount|floatformat:0|intcomma }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Due Date</span>
+        <span class="highlight-value" style="color: {% if invoice.is_overdue %}#dc2626{% else %}#1.f2.93.7{% endif %};">
+            {{ invoice.due_date|date:"F d, Y" }}
+        </span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Status</span>
+        <span class="highlight-value">
+            <span class="status-badge status-warning">Pending Payment</span>
+        </span>
+    </div>
+</div>
+
+<div class="button-container">
+    <a href="{{ site_url }}/billing/invoices/{{ invoice.pk }}/" class="button">Pay Now</a>
+</div>
+
+<p class="email-text">
+    <strong>Payment Methods Available:</strong>
+</p>
+
+<ul style="color: #4b5563; margin: 16px 0 24px 20px;">
+    <li style="margin-bottom: 8px;"> M-Pesa - Instant payment via mobile money</li>
+    <li style="margin-bottom: 8px;"> Card Payment - Visa, Mastercard accepted</li>
+    <li style="margin-bottom: 8px;"> Bank Transfer - Direct bank deposit</li>
+</ul>
+
+<div class="alert alert-info">
+     <strong>Tip:</strong> Set up automatic payments to never miss a due date!
+</div>
+
+<div class="alert alert-warning">
+     <strong>Important:</strong> Late payments may result in policy suspension. Please ensure payment is made by the due date.
+</div>
+
+<p class="email-text">
+    If you have any questions about this invoice, please don't hesitate to contact our billing team.
+</p>
+
+<p class="email-text">
+    Best regards,<br>
+    <strong>The ifinsure Billing Team</strong>
+</p>
+{% endblock %}

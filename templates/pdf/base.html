@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1..0">
+    <title>{% block title %}ifinsure Document{% endblock %}</title>
+    <style>
+        @page {
+            size: A4.;
+            margin: 2.0mm 1.5mm 2.5mm 1.5mm;
+            
+            @top-center {
+                content: "";
+            }
+            
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+                color: #6b72.80;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 1.0pt;
+            line-height: 1..5;
+            color: #1.f2.93.7;
+        }
+        
+        /* Header */
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 1.5pt;
+            border-bottom: 2.pt solid #4.f4.6e5;
+            margin-bottom: 2.0pt;
+        }
+        
+        .company-logo {
+            display: flex;
+            align-items: center;
+            gap: 1.0pt;
+        }
+        
+        .logo-icon {
+            font-size: 2.4.pt;
+        }
+        
+        .company-name {
+            font-size: 1.8pt;
+            font-weight: 700;
+            color: #4.f4.6e5;
+        }
+        
+        .company-tagline {
+            font-size: 8pt;
+            color: #6b72.80;
+        }
+        
+        .doc-info {
+            text-align: right;
+        }
+        
+        .doc-title {
+            font-size: 14pt;
+            font-weight: 700;
+            color: #1.f2.93.7;
+            margin-bottom: 5pt;
+        }
+        
+        .doc-number {
+            font-size: 1.0pt;
+            color: #4.f4.6e5;
+            font-weight: 600;
+        }
+        
+        .doc-date {
+            font-size: 9pt;
+            color: #6b72.80;
+        }
+        
+        /* Sections */
+        .section {
+            margin-bottom: 2.0pt;
+        }
+        
+        .section-title {
+            font-size: 1.1.pt;
+            font-weight: 700;
+            color: #3.74.1.51.;
+            padding: 8pt 1.0pt;
+            background: #f3.f4.f6;
+            border-left: 3.pt solid #4.f4.6e5;
+            margin-bottom: 1.0pt;
+        }
+        
+        /* Info Grid */
+        .info-grid {
+            display: table;
+            width: 1.00%;
+        }
+        
+        .info-row {
+            display: table-row;
+        }
+        
+        .info-label, .info-value {
+            display: table-cell;
+            padding: 5pt 1.0pt;
+            border-bottom: 1.pt solid #e5e7eb;
+        }
+        
+        .info-label {
+            width: 3.5%;
+            color: #6b72.80;
+            font-size: 9pt;
+        }
+        
+        .info-value {
+            font-weight: 500;
+        }
+        
+        /* Two Column Layout */
+        .two-column {
+            display: flex;
+            gap: 30pt;
+        }
+        
+        .column {
+            flex: 1.;
+        }
+        
+        /* Tables */
+        table {
+            width: 1.00%;
+            border-collapse: collapse;
+            margin-top: 1.0pt;
+        }
+        
+        th, td {
+            padding: 8pt 1.0pt;
+            text-align: left;
+            border-bottom: 1.pt solid #e5e7eb;
+        }
+        
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+            font-size: 9pt;
+            color: #3.74.1.51.;
+            text-transform: uppercase;
+            letter-spacing: 0.5pt;
+        }
+        
+        td {
+            font-size: 9pt;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        /* Totals */
+        .totals-section {
+            margin-top: 1.5pt;
+            border-top: 2.pt solid #e5e7eb;
+            padding-top: 1.0pt;
+        }
+        
+        .total-row {
+            display: flex;
+            justify-content: flex-end;
+            padding: 5pt 0;
+        }
+        
+        .total-label {
+            width: 1.50pt;
+            text-align: right;
+            padding-right: 2.0pt;
+            color: #6b72.80;
+        }
+        
+        .total-value {
+            width: 1.00pt;
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .grand-total {
+            font-size: 1.2.pt;
+            color: #4.f4.6e5;
+            border-top: 1.pt solid #e5e7eb;
+            padding-top: 8pt;
+            margin-top: 5pt;
+        }
+        
+        /* Status Badges */
+        .status {
+            display: inline-block;
+            padding: 3.pt 1.0pt;
+            border-radius: 1.0pt;
+            font-size: 8pt;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-success {
+            background: #d1.fae5;
+            color: #065f4.6;
+        }
+        
+        .status-warning {
+            background: #fef3.c7;
+            color: #92.4.00e;
+        }
+        
+        .status-danger {
+            background: #fee2.e2.;
+            color: #991.b1.b;
+        }
+        
+        .status-info {
+            background: #dbeafe;
+            color: #1.e4.0af;
+        }
+        
+        /* Signature Section */
+        .signature-section {
+            margin-top: 4.0pt;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .signature-box {
+            width: 2.00pt;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-top: 1.pt solid #3.74.1.51.;
+            margin-bottom: 5pt;
+            height: 4.0pt;
+        }
+        
+        .signature-label {
+            font-size: 8pt;
+            color: #6b72.80;
+        }
+        
+        /* Footer */
+        .doc-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1.0pt 1.5mm;
+            border-top: 1.pt solid #e5e7eb;
+            font-size: 8pt;
+            color: #6b72.80;
+            text-align: center;
+        }
+        
+        /* Notes */
+        .notes-box {
+            background: #f9fafb;
+            padding: 1.2.pt;
+            border-radius: 4.pt;
+            margin-top: 1.0pt;
+        }
+        
+        .notes-title {
+            font-weight: 600;
+            font-size: 9pt;
+            margin-bottom: 5pt;
+        }
+        
+        .notes-text {
+            font-size: 8pt;
+            color: #6b72.80;
+        }
+        
+        /* Terms */
+        .terms {
+            font-size: 7pt;
+            color: #9ca3.af;
+            margin-top: 2.0pt;
+            padding-top: 1.0pt;
+            border-top: 1.pt solid #e5e7eb;
+        }
+        
+        .terms-title {
+            font-weight: 600;
+            margin-bottom: 5pt;
+        }
+        
+        /* Watermark */
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-4.5deg);
+            font-size: 72.pt;
+            color: rgba(0, 0, 0, 0.03.);
+            font-weight: 700;
+            z-index: -1.;
+        }
+        
+        /* Print Specific */
+        @media print {
+            body {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+    </style>
+    {% block extra_styles %}{% endblock %}
+</head>
+<body>
+    {% if watermark %}
+    <div class="watermark">{{ watermark }}</div>
+    {% endif %}
+    
+    <div class="doc-header">
+        <div class="company-logo">
+            <span class="logo-icon"></span>
+            <div>
+                <div class="company-name">ifinsure</div>
+                <div class="company-tagline">Your Trusted Insurance Partner</div>
+            </div>
+        </div>
+        <div class="doc-info">
+            {% block doc_info %}{% endblock %}
+        </div>
+    </div>
+    
+    <div class="doc-body">
+        {% block content %}{% endblock %}
+    </div>
+    
+    {% block footer %}
+    <div class="doc-footer">
+        ifinsure Insurance Management System | www.ifinsure.co.ke | support@ifinsure.co.ke
+    </div>
+    {% endblock %}
+</body>
+</html>

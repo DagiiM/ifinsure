@@ -1,0 +1,3 @@
+"""
+CRM tests package.
+"""

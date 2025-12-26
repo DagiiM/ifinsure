@@ -1,0 +1,582 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Upload Payment Proof - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'wallets:wallet' %}">Wallet</a>
+            <span>›</span>
+            <a href="{% url 'wallets:deposit' %}">Deposit</a>
+            <span>›</span>
+            <span>Proof</span>
+        </nav>
+        <h1 class="page-title">Upload Payment Proof</h1>
+        <p class="page-subtitle">Complete your deposit by uploading proof of payment</p>
+    </div>
+</div>
+
+<div class="proof-container">
+    <div class="proof-main">
+        <!-- Payment Details -->
+        <div class="proof-payment-card">
+            <div class="proof-payment-header">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Awaiting Proof of Payment</span>
+            </div>
+            <div class="proof-payment-amount">
+                <span class="label">Amount to Pay</span>
+                <span class="amount">{{ payment.currency }} {{ payment.amount|floatformat:0|intcomma }}</span>
+            </div>
+            <div class="proof-payment-details">
+                <div class="detail">
+                    <span class="label">Reference</span>
+                    <span class="value">{{ payment.reference }}</span>
+                </div>
+                <div class="detail">
+                    <span class="label">Method</span>
+                    <span class="value">{{ payment.payment_method.name }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment Instructions -->
+        {% if payment_accounts %}
+        <div class="proof-section">
+            <h3>Payment Details</h3>
+            <p class="proof-instruction">Send payment to one of the following accounts:</p>
+            
+            <div class="payment-accounts">
+                {% for account in payment_accounts %}
+                <div class="payment-account-card">
+                    <h4>{{ account.name }}</h4>
+                    <div class="account-details">
+                        {% if account.account_details.type == 'paybill' %}
+                        <div class="account-row">
+                            <span class="label">Business Number</span>
+                            <span class="value copyable" data-copy="{{ account.account_details.business_number }}">
+                                {{ account.account_details.business_number }}
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="account-row">
+                            <span class="label">Account Number</span>
+                            <span class="value copyable" data-copy="{{ account.account_details.account_number }}">
+                                {{ account.account_details.account_number }}
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                            </span>
+                        </div>
+                        {% elif account.account_details.type == 'till' %}
+                        <div class="account-row">
+                            <span class="label">Till Number</span>
+                            <span class="value copyable" data-copy="{{ account.account_details.till_number }}">
+                                {{ account.account_details.till_number }}
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                            </span>
+                        </div>
+                        {% else %}
+                        {% for key, value in account.account_details.items %}
+                        <div class="account-row">
+                            <span class="label">{{ key|title }}</span>
+                            <span class="value">{{ value }}</span>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Proof Upload Form -->
+        <div class="proof-section">
+            <h3>Upload Proof</h3>
+            <p class="proof-instruction">After making your payment, upload a screenshot or photo of the confirmation.</p>
+            
+            <form method="post" enctype="multipart/form-data" class="proof-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label>Screenshot/Photo of Payment *</label>
+                    <div class="file-upload-area" id="uploadArea">
+                        <input type="file" name="proof_image" id="proofImage" accept="image/*" required>
+                        <div class="file-upload-content">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="40" height="40">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span class="file-upload-text">Click or drag to upload</span>
+                            <span class="file-upload-hint">PNG, JPG up to 5MB</span>
+                        </div>
+                        <img class="file-preview" id="filePreview" style="display: none;">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="transaction_reference">M-Pesa/Transaction Code</label>
+                    <input type="text" name="transaction_reference" id="transaction_reference" 
+                           placeholder="e.g., QHK7J8LP2N" class="form-input">
+                    <span class="form-hint">The confirmation code from your payment</span>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sender_name">Sender Name</label>
+                        <input type="text" name="sender_name" id="sender_name" 
+                               placeholder="Name on the account" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="sender_number">Phone/Account Number</label>
+                        <input type="text" name="sender_number" id="sender_number" 
+                               placeholder="07XX XXX XXX" class="form-input">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg btn-block">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    Submit Proof
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="proof-sidebar">
+        <div class="proof-tips-card">
+            <h4>Tips for Valid Proof</h4>
+            <ul class="proof-tips">
+                <li>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Include the full confirmation message
+                </li>
+                <li>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Ensure amount matches the deposit
+                </li>
+                <li>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Transaction code should be visible
+                </li>
+                <li>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Clear, readable screenshot
+                </li>
+            </ul>
+        </div>
+        
+        <div class="proof-timing-card">
+            <h4>Verification Time</h4>
+            <p>Proofs are typically verified within:</p>
+            <div class="timing-badge">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                5-30 minutes
+            </div>
+            <p class="timing-note">During business hours (8AM - 10PM EAT)</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.proof-container {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .proof-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.proof-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Payment Card */
+.proof-payment-card {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 1px solid #fcd34d;
+    border-radius: 16px;
+    padding: 1.5rem;
+}
+
+.proof-payment-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #92400e;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.proof-payment-header svg {
+    width: 20px;
+    height: 20px;
+}
+
+.proof-payment-amount {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+}
+
+.proof-payment-amount .label {
+    font-size: 0.75rem;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.proof-payment-amount .amount {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #78350f;
+}
+
+.proof-payment-details {
+    display: flex;
+    gap: 2rem;
+}
+
+.proof-payment-details .detail {
+    display: flex;
+    flex-direction: column;
+}
+
+.proof-payment-details .label {
+    font-size: 0.75rem;
+    color: #92400e;
+}
+
+.proof-payment-details .value {
+    font-weight: 600;
+    color: #78350f;
+}
+
+/* Sections */
+.proof-section {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.proof-section h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: 0.5rem;
+}
+
+.proof-instruction {
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+    margin-bottom: 1.5rem;
+}
+
+/* Payment Accounts */
+.payment-accounts {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.payment-account-card {
+    padding: 1.25rem;
+    background: var(--color-gray-50);
+    border-radius: 12px;
+    border: 1px solid var(--color-gray-200);
+}
+
+.payment-account-card h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: 0.75rem;
+}
+
+.account-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.account-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.account-row .label {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.account-row .value {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.copyable {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    background: white;
+    border-radius: 4px;
+}
+
+.copyable:hover {
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+}
+
+/* Form */
+.proof-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-700);
+}
+
+.form-input {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-hint {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* File Upload */
+.file-upload-area {
+    position: relative;
+    border: 2px dashed var(--color-gray-300);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.file-upload-area:hover {
+    border-color: var(--color-primary-400);
+    background: var(--color-primary-50);
+}
+
+.file-upload-area input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-gray-400);
+}
+
+.file-upload-text {
+    font-weight: 500;
+    color: var(--color-gray-600);
+}
+
+.file-upload-hint {
+    font-size: 0.8rem;
+}
+
+.file-preview {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+}
+
+/* Sidebar */
+.proof-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.proof-tips-card,
+.proof-timing-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.proof-tips-card h4,
+.proof-timing-card h4 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: 1rem;
+}
+
+.proof-tips {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.proof-tips li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--color-gray-600);
+    margin-bottom: 0.75rem;
+}
+
+.proof-tips li svg {
+    width: 16px;
+    height: 16px;
+    color: var(--color-success);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.proof-timing-card p {
+    font-size: 0.875rem;
+    color: var(--color-gray-600);
+    margin-bottom: 0.75rem;
+}
+
+.timing-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+    border-radius: 8px;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.timing-badge svg {
+    width: 20px;
+    height: 20px;
+}
+
+.timing-note {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    margin-top: 0.75rem;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-600);
+}
+
+.breadcrumb span {
+    color: var(--color-gray-400);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // File preview
+    const fileInput = document.getElementById('proofImage');
+    const preview = document.getElementById('filePreview');
+    const content = document.querySelector('.file-upload-content');
+    
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                content.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Copy to clipboard
+    document.querySelectorAll('.copyable').forEach(el => {
+        el.addEventListener('click', function() {
+            const text = this.dataset.copy;
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = this.innerHTML;
+                this.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copied!';
+                setTimeout(() => { this.innerHTML = orig; }, 2000);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

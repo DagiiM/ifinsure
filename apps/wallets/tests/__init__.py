@@ -1,0 +1,3 @@
+"""
+Wallets tests package.
+"""

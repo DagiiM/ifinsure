@@ -1,0 +1,79 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}Policy Expiring Soon - ifinsure{% endblock %}
+
+{% block content %}
+<p class="email-greeting">Your Policy is Expiring Soon</p>
+
+<p class="email-text">
+    Dear {{ user.first_name }},
+</p>
+
+<p class="email-text">
+    This is a friendly reminder that your insurance policy is expiring in <strong>{{ days_until_expiry }} days</strong>. To ensure continuous coverage, please take action before the expiry date.
+</p>
+
+<div class="alert alert-warning">
+    Your coverage will end on {{ policy.end_date|date:"F d, Y" }} unless renewed.
+</div>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Policy Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Policy Number</span>
+        <span class="highlight-value">{{ policy.policy_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Product</span>
+        <span class="highlight-value">{{ policy.product.name }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Coverage Amount</span>
+        <span class="highlight-value">KES {{ policy.coverage_amount|floatformat:0|intcomma }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Expiry Date</span>
+        <span class="highlight-value" style="color: #dc2626; font-weight: 700;">{{ policy.end_date|date:"F d, Y" }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Days Remaining</span>
+        <span class="highlight-value" style="color: #dc2626;">{{ days_until_expiry }} days</span>
+    </div>
+</div>
+
+<p class="email-text">
+    <strong>Why renew your policy?</strong>
+</p>
+
+<ul style="color: #4b5563; margin: 16px 0 24px 20px;">
+    <li style="margin-bottom: 8px;">Maintain uninterrupted protection</li>
+    <li style="margin-bottom: 8px;">Lock in your current premium rate</li>
+    <li style="margin-bottom: 8px;">Keep your no-claims bonus intact</li>
+    <li style="margin-bottom: 8px;">Hassle-free renewal process</li>
+</ul>
+
+<div class="button-container">
+    <a href="{{ site_url }}/policies/{{ policy.pk }}/renew/" class="button">Renew Now</a>
+</div>
+
+<p class="email-text">
+    <strong>What happens if I don't renew?</strong>
+</p>
+
+<p class="email-text">
+    If your policy expires without renewal, your coverage will end and you will not be protected against any claims arising after the expiry date. Any new policy taken after a gap may be subject to new underwriting requirements.
+</p>
+
+<div class="alert alert-info">
+    <strong>Tip:</strong> Set up auto-renewal to never worry about expiry dates again!
+</div>
+
+<p class="email-text">
+    If you have any questions about your renewal or would like to discuss your coverage options, our team is here to help.
+</p>
+
+<p class="email-text">
+    Best regards,<br>
+    <strong>The ifinsure Team</strong>
+</p>
+{% endblock %}

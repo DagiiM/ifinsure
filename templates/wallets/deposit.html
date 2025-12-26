@@ -1,0 +1,484 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Deposit Funds - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'wallets:wallet' %}">Wallet</a>
+            <span>›</span>
+            <span>Deposit</span>
+        </nav>
+        <h1 class="page-title">Deposit Funds</h1>
+        <p class="page-subtitle">Add money to your wallet</p>
+    </div>
+</div>
+
+<div class="deposit-container">
+    <div class="deposit-main">
+        <form method="post" class="deposit-form">
+            {% csrf_token %}
+            
+            <!-- Amount -->
+            <div class="deposit-section">
+                <h3 class="deposit-section-title">Amount</h3>
+                <div class="amount-input-wrapper">
+                    <span class="amount-currency">{{ wallet.currency }}</span>
+                    <input type="number" name="amount" id="amount" class="amount-input" 
+                           placeholder="0" min="10" step="1" required>
+                </div>
+                <div class="amount-presets">
+                    <button type="button" class="amount-preset" data-amount="500">500</button>
+                    <button type="button" class="amount-preset" data-amount="1000">1,000</button>
+                    <button type="button" class="amount-preset" data-amount="2500">2,500</button>
+                    <button type="button" class="amount-preset" data-amount="5000">5,000</button>
+                    <button type="button" class="amount-preset" data-amount="10000">10,000</button>
+                </div>
+            </div>
+            
+            <!-- Payment Methods -->
+            <div class="deposit-section">
+                <h3 class="deposit-section-title">Payment Method</h3>
+                <div class="payment-methods">
+                    {% for method in payment_methods %}
+                    <label class="payment-method-card" data-method="{{ method.code }}">
+                        <input type="radio" name="payment_method" value="{{ method.code }}" 
+                               {% if forloop.first %}checked{% endif %}>
+                        <div class="payment-method-content">
+                            <div class="payment-method-icon {% if method.code == 'mpesa' %}mpesa{% endif %}">
+                                {% if method.code == 'mpesa' %}
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                </svg>
+                                {% elif method.code == 'bank_transfer' %}
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                                {% else %}
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                                {% endif %}
+                            </div>
+                            <div class="payment-method-info">
+                                <span class="payment-method-name">{{ method.name }}</span>
+                                <span class="payment-method-desc">{{ method.description }}</span>
+                            </div>
+                            {% if method.code == 'mpesa' %}
+                            <span class="payment-method-badge instant">Instant</span>
+                            {% elif method.requires_proof %}
+                            <span class="payment-method-badge p2p">P2P</span>
+                            {% endif %}
+                            <div class="payment-method-check">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-lg btn-block">
+                Continue
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                </svg>
+            </button>
+        </form>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="deposit-sidebar">
+        <div class="deposit-info-card">
+            <h4>Current Balance</h4>
+            <div class="deposit-current-balance">
+                <span class="currency">{{ wallet.currency }}</span>
+                <span class="amount">{{ wallet.balance|floatformat:2|intcomma }}</span>
+            </div>
+        </div>
+        
+        <div class="deposit-info-card methods-info">
+            <h4>Payment Methods</h4>
+            <div class="method-info-item">
+                <div class="method-info-icon mpesa">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <strong>M-Pesa</strong>
+                    <p>Instant via STK Push. Enter your phone number and approve the prompt.</p>
+                </div>
+            </div>
+            <div class="method-info-item">
+                <div class="method-info-icon bank">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"></path>
+                    </svg>
+                </div>
+                <div>
+                    <strong>Bank Transfer</strong>
+                    <p>Transfer to our account and upload proof. Verified within 30 minutes.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.deposit-container {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .deposit-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.deposit-main {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.deposit-section {
+    margin-bottom: 2rem;
+}
+
+.deposit-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: 1rem;
+}
+
+/* Amount Input */
+.amount-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: var(--color-gray-50);
+    border: 2px solid var(--color-gray-200);
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+
+.amount-input-wrapper:focus-within {
+    border-color: var(--color-primary-500);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.amount-currency {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-400);
+}
+
+.amount-input {
+    flex: 1;
+    font-size: 2.5rem;
+    font-weight: 800;
+    border: none;
+    background: transparent;
+    outline: none;
+    color: var(--color-gray-900);
+}
+
+.amount-input::placeholder {
+    color: var(--color-gray-300);
+}
+
+.amount-presets {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.amount-preset {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: var(--color-gray-100);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.amount-preset:hover {
+    background: var(--color-primary-100);
+    color: var(--color-primary-700);
+}
+
+/* Payment Methods */
+.payment-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.payment-method-card {
+    cursor: pointer;
+}
+
+.payment-method-card input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.payment-method-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--color-gray-50);
+    border: 2px solid var(--color-gray-200);
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+
+.payment-method-card input:checked + .payment-method-content {
+    background: var(--color-primary-50);
+    border-color: var(--color-primary-500);
+}
+
+.payment-method-card[data-method="mpesa"] input:checked + .payment-method-content {
+    background: #f0fdf4;
+    border-color: #22c55e;
+}
+
+.payment-method-card:hover .payment-method-content {
+    border-color: var(--color-gray-300);
+}
+
+.payment-method-icon {
+    width: 44px;
+    height: 44px;
+    background: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-gray-600);
+}
+
+.payment-method-icon.mpesa {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.payment-method-card input:checked + .payment-method-content .payment-method-icon {
+    background: var(--color-primary-600);
+    color: white;
+}
+
+.payment-method-card[data-method="mpesa"] input:checked + .payment-method-content .payment-method-icon {
+    background: #16a34a;
+    color: white;
+}
+
+.payment-method-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.payment-method-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.payment-method-name {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.payment-method-desc {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.payment-method-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.payment-method-badge.instant {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.payment-method-badge.p2p {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.payment-method-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--color-gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s;
+}
+
+.payment-method-card input:checked + .payment-method-content .payment-method-check {
+    opacity: 1;
+    background: var(--color-primary-600);
+    color: white;
+}
+
+.payment-method-card[data-method="mpesa"] input:checked + .payment-method-content .payment-method-check {
+    background: #16a34a;
+}
+
+.payment-method-check svg {
+    width: 14px;
+    height: 14px;
+}
+
+.btn-block {
+    width: 100%;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* Sidebar */
+.deposit-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.deposit-info-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.deposit-info-card h4 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: 1rem;
+}
+
+.deposit-current-balance {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.deposit-current-balance .currency {
+    font-size: 1rem;
+    color: var(--color-gray-500);
+}
+
+.deposit-current-balance .amount {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+}
+
+.methods-info {
+    padding-top: 1rem;
+}
+
+.method-info-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.method-info-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.method-info-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.method-info-icon.mpesa {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.method-info-icon.bank {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.method-info-item strong {
+    font-size: 0.875rem;
+    color: var(--color-gray-900);
+}
+
+.method-info-item p {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    margin: 0.25rem 0 0 0;
+    line-height: 1.4;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-600);
+}
+
+.breadcrumb span {
+    color: var(--color-gray-400);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Amount presets
+    document.querySelectorAll('.amount-preset').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('amount').value = this.dataset.amount;
+        });
+    });
+});
+</script>
+{% endblock %}

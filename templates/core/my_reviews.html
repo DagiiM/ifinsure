@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Reviews - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1>My Reviews</h1>
+        <p class="text-muted">Track your submitted reviews and their status</p>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'core:submit_review' %}" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><path d="M12 5v14M5 12h14"/></svg>
+            Write New Review
+        </a>
+    </div>
+</div>
+
+<div class="content-wrapper">
+    {% if reviews %}
+    <div class="row">
+        {% for review in reviews %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge badge-{{ review.status }}">{{ review.get_status_display }}</span>
+                        <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="star-display mb-3">
+                        {% for i in "12345" %}
+                        {% if forloop.counter <= review.rating %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color: #fbbf24;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        {% else %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="color: #d1d5db;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    
+                    <blockquote class="mb-3" style="font-style: italic; border-left: 3px solid var(--color-primary-200); padding-left: 1rem;">
+                        "{{ review.quote }}"
+                    </blockquote>
+                    
+                    <div class="text-muted text-sm">
+                        <strong>Display Name:</strong> {{ review.author_name }}<br>
+                        <strong>Title:</strong> {{ review.author_title }}
+                    </div>
+                    
+                    {% if review.status == 'rejected' and review.rejection_reason %}
+                    <div class="alert alert-danger mt-3 mb-0">
+                        <strong>Rejection Reason:</strong> {{ review.rejection_reason }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-muted mb-4">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <h3 class="mb-2">No Reviews Yet</h3>
+            <p class="text-muted mb-4">You haven't submitted any reviews yet.</p>
+            <a href="{% url 'core:submit_review' %}" class="btn btn-primary">Write Your First Review</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .badge-pending { background: var(--color-warning-light); color: var(--color-warning); }
+    .badge-approved { background: var(--color-success-light); color: var(--color-success); }
+    .badge-rejected { background: var(--color-danger-light); color: var(--color-danger); }
+</style>
+{% endblock %}

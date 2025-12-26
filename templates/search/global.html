@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Search - ifinsure{% endblock %}
+
+{% block content %}
+<div class="search-page">
+    <!-- Search Header -->
+    <div class="search-header">
+        <div class="search-container">
+            <form method="get" class="search-form" id="globalSearchForm">
+                <div class="search-input-wrapper">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="M21 21l-4.35-4.35"></path>
+                    </svg>
+                    <input 
+                        type="search" 
+                        name="q" 
+                        value="{{ query }}" 
+                        placeholder="Search across all resources..." 
+                        class="search-input"
+                        autocomplete="off"
+                        autofocus
+                    >
+                    <div class="search-shortcut">
+                        <kbd>⌘</kbd><kbd>K</kbd>
+                    </div>
+                </div>
+                
+                <!-- Model Filters -->
+                {% if available_models %}
+                <div class="search-filters">
+                    <span class="filter-label">Filter by:</span>
+                    {% for model in available_models %}
+                    <label class="filter-chip">
+                        <input type="checkbox" name="type" value="{{ model.name }}" {% if model.name in model_filter %}checked{% endif %}>
+                        <span>{{ model.verbose_name_plural }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    <div class="search-results">
+        {% if query %}
+            {% if results and results.total > 0 %}
+                <!-- Results Summary -->
+                <div class="results-summary">
+                    <span class="results-count">{{ results.total }} result{{ results.total|pluralize }}</span>
+                    <span class="results-query">for "{{ query }}"</span>
+                    {% if results.duration_ms %}
+                    <span class="results-time">({{ results.duration_ms }}ms)</span>
+                    {% endif %}
+                </div>
+
+                <!-- Results by Category -->
+                {% for category, items in results.categories.items %}
+                <div class="results-category">
+                    <h2 class="category-heading">
+                        {{ category }}
+                        <span class="category-count">{{ items|length }}</span>
+                    </h2>
+                    <div class="results-list">
+                        {% for item in items %}
+                        <a href="{{ item.url|default:'#' }}" class="result-item">
+                            <div class="result-icon">
+                                {% if item.icon == 'policy' %}
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                                {% elif item.icon == 'user' %}
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                                {% elif item.icon == 'claim' %}
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 11l3 3L22 4"></path>
+                                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                                </svg>
+                                {% elif item.icon == 'payment' %}
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                                </svg>
+                                {% else %}
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                    <polyline points="13 2 13 9 20 9"></polyline>
+                                </svg>
+                                {% endif %}
+                            </div>
+                            <div class="result-content">
+                                <h3 class="result-title">{{ item.title }}</h3>
+                                {% if item.subtitle %}
+                                <p class="result-subtitle">{{ item.subtitle }}</p>
+                                {% endif %}
+                                <span class="result-type">{{ item.model_verbose_name|default:item.model }}</span>
+                            </div>
+                            <div class="result-arrow">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+            {% else %}
+                <!-- No Results -->
+                <div class="no-results">
+                    <div class="no-results-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21l-4.35-4.35"></path>
+                        </svg>
+                    </div>
+                    <h3>No results found</h3>
+                    <p>We couldn't find anything matching "{{ query }}"</p>
+                    <div class="search-tips">
+                        <h4>Search tips:</h4>
+                        <ul>
+                            <li>Check your spelling</li>
+                            <li>Try more general keywords</li>
+                            <li>Try different keywords</li>
+                            <li>Remove filters to broaden your search</li>
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <!-- Initial State -->
+            <div class="search-initial">
+                <div class="initial-icon">
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="M21 21l-4.35-4.35"></path>
+                    </svg>
+                </div>
+                <h2>Search Everything</h2>
+                <p>Find policies, claims, customers, invoices, and more</p>
+                
+                <div class="search-categories">
+                    <h4>Try searching for:</h4>
+                    <div class="category-suggestions">
+                        <button onclick="setSearch('policy')" class="suggestion-chip">Policies</button>
+                        <button onclick="setSearch('claim')" class="suggestion-chip">Claims</button>
+                        <button onclick="setSearch('customer')" class="suggestion-chip">Customers</button>
+                        <button onclick="setSearch('invoice')" class="suggestion-chip">Invoices</button>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function setSearch(query) {
+    document.querySelector('.search-input').value = query;
+    document.getElementById('globalSearchForm').submit();
+}
+
+// Auto-submit when filters change
+document.querySelectorAll('.filter-chip input').forEach(function(checkbox) {
+    checkbox.addEventListener('change', function() {
+        document.getElementById('globalSearchForm').submit();
+    });
+});
+
+// Keyboard shortcut
+document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        document.querySelector('.search-input').focus();
+    }
+});
+</script>
+{% endblock %}

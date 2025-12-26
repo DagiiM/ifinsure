@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Transaction History - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'wallets:wallet' %}">Wallet</a>
+            <span>›</span>
+            <span>Transactions</span>
+        </nav>
+        <h1 class="page-title">Transaction History</h1>
+        <p class="page-subtitle">View all your wallet transactions</p>
+    </div>
+</div>
+
+<div class="transactions-container">
+    <!-- Filters -->
+    <div class="transactions-filters">
+        <form method="get" class="filter-form">
+            <select name="type" class="filter-select" onchange="this.form.submit()">
+                <option value="">All Transactions</option>
+                {% for type_code, type_name in transaction_types %}
+                <option value="{{ type_code }}" {% if selected_type == type_code %}selected{% endif %}>{{ type_name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        
+        <div class="wallet-balance-badge">
+            Balance: <strong>{{ wallet.currency }} {{ wallet.balance|floatformat:0|intcomma }}</strong>
+        </div>
+    </div>
+    
+    <!-- Transactions List -->
+    {% if transactions %}
+    <div class="transactions-list">
+        {% for tx in transactions %}
+        <div class="transaction-item">
+            <div class="transaction-icon {% if tx.is_credit %}credit{% else %}debit{% endif %}">
+                {% if tx.is_credit %}
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>
+                </svg>
+                {% else %}
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path>
+                </svg>
+                {% endif %}
+            </div>
+            
+            <div class="transaction-info">
+                <div class="transaction-primary">
+                    <span class="transaction-type">{{ tx.get_transaction_type_display }}</span>
+                    <span class="transaction-amount {% if tx.is_credit %}credit{% else %}debit{% endif %}">
+                        {% if tx.is_credit %}+{% endif %}{{ wallet.currency }} {{ tx.amount|floatformat:0|intcomma }}
+                    </span>
+                </div>
+                <div class="transaction-secondary">
+                    <span class="transaction-desc">{{ tx.description|default:"—" }}</span>
+                    <span class="transaction-balance">Balance: {{ wallet.currency }} {{ tx.balance_after|floatformat:0|intcomma }}</span>
+                </div>
+            </div>
+            
+            <div class="transaction-meta">
+                <span class="transaction-date">{{ tx.created_at|date:"M d, Y" }}</span>
+                <span class="transaction-time">{{ tx.created_at|date:"g:i A" }}</span>
+                {% if tx.reference %}
+                <span class="transaction-ref">{{ tx.reference }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if selected_type %}&type={{ selected_type }}{% endif %}" class="pagination-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Previous
+        </a>
+        {% endif %}
+        
+        <span class="pagination-info">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if selected_type %}&type={{ selected_type }}{% endif %}" class="pagination-btn">
+            Next
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="64" height="64">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        <h3>No transactions found</h3>
+        <p>{% if selected_type %}No {{ selected_type }} transactions yet.{% else %}You haven't made any transactions yet.{% endif %}</p>
+        <a href="{% url 'wallets:deposit' %}" class="btn btn-primary">Make a Deposit</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.transactions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Filters */
+.transactions-filters {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filter-select {
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background: white;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px;
+}
+
+.wallet-balance-badge {
+    padding: 0.5rem 1rem;
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+    border-radius: 8px;
+    font-size: 0.875rem;
+}
+
+/* Transactions List */
+.transactions-list {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.transaction-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    transition: background 0.2s;
+}
+
+.transaction-item:last-child {
+    border-bottom: none;
+}
+
+.transaction-item:hover {
+    background: var(--color-gray-50);
+}
+
+.transaction-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.transaction-icon.credit {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.transaction-icon.debit {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.transaction-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.transaction-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.transaction-primary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.transaction-type {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.transaction-amount {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.transaction-amount.credit {
+    color: #16a34a;
+}
+
+.transaction-amount.debit {
+    color: #dc2626;
+}
+
+.transaction-secondary {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.transaction-desc {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.transaction-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.125rem;
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    flex-shrink: 0;
+}
+
+.transaction-ref {
+    font-family: monospace;
+    background: var(--color-gray-100);
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.pagination-btn:hover {
+    background: var(--color-gray-50);
+    border-color: var(--color-gray-300);
+}
+
+.pagination-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.pagination-info {
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 16px;
+}
+
+.empty-state svg {
+    color: var(--color-gray-300);
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    color: var(--color-gray-700);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: var(--color-gray-500);
+    margin-bottom: 1.5rem;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-600);
+}
+
+.breadcrumb span {
+    color: var(--color-gray-400);
+}
+</style>
+{% endblock %}

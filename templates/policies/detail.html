@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ policy.policy_number }} - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumbs">
+        <a href="{% url 'policies:list' %}">Policies</a>
+        <span>/</span>
+        <span>{{ policy.policy_number }}</span>
+    </div>
+    <h1>{{ policy.policy_number }}</h1>
+    <p>{{ policy.product.name }}</p>
+</div>
+
+<div class="grid grid-3 gap-6">
+    <!-- Policy Info -->
+    <div class="card" style="grid-column: span 2;">
+        <div class="card-header">
+            <h4>Policy Details</h4>
+        </div>
+        <div class="card-body">
+            <div class="profile-grid">
+                <div class="profile-item">
+                    <span class="profile-label">Policy Number</span>
+                    <span class="profile-value">{{ policy.policy_number }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Product</span>
+                    <span class="profile-value">{{ policy.product.name }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Status</span>
+                    <span class="profile-value">
+                        <span class="badge badge-{% if policy.status == 'active' %}success{% elif policy.status == 'pending' %}warning{% else %}default{% endif %}">
+                            {{ policy.get_status_display }}
+                        </span>
+                    </span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Coverage Amount</span>
+                    <span class="profile-value">KES {{ policy.coverage_amount|intcomma }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Premium</span>
+                    <span class="profile-value">KES {{ policy.premium_amount|intcomma }} / {{ policy.get_payment_frequency_display }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Start Date</span>
+                    <span class="profile-value">{{ policy.start_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">End Date</span>
+                    <span class="profile-value">{{ policy.end_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Days Remaining</span>
+                    <span class="profile-value {% if policy.days_until_expiry <= 30 %}text-warning{% endif %}">
+                        {{ policy.days_until_expiry }} days
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="card">
+        <div class="card-header">
+            <h4>Actions</h4>
+        </div>
+        <div class="card-body">
+            <div class="flex flex-col gap-3">
+                <a href="{% url 'claims:create' %}?policy={{ policy.pk }}" class="btn btn-primary btn-block">
+                    Submit Claim
+                </a>
+                <a href="{% url 'billing:invoices' %}" class="btn btn-secondary btn-block">
+                    View Invoices
+                </a>
+            </div>
+        </div>
+        
+        {% if policy.agent %}
+        <div class="card-footer">
+            <span class="text-sm text-muted">Your Agent</span>
+            <div class="flex items-center gap-3 mt-2">
+                <div class="avatar avatar-sm">{{ policy.agent.initials }}</div>
+                <div>
+                    <div class="font-medium">{{ policy.agent.get_full_name }}</div>
+                    <div class="text-sm text-muted">{{ policy.agent.email }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Beneficiary -->
+    {% if policy.beneficiary_name %}
+    <div class="card" style="grid-column: span 3;">
+        <div class="card-header">
+            <h4>Beneficiary Information</h4>
+        </div>
+        <div class="card-body">
+            <div class="profile-grid">
+                <div class="profile-item">
+                    <span class="profile-label">Name</span>
+                    <span class="profile-value">{{ policy.beneficiary_name }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Relationship</span>
+                    <span class="profile-value">{{ policy.beneficiary_relationship|default:"-" }}</span>
+                </div>
+                <div class="profile-item">
+                    <span class="profile-label">Phone</span>
+                    <span class="profile-value">{{ policy.beneficiary_phone|default:"-" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-4);
+}
+
+.profile-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+}
+
+.profile-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.profile-value {
+    font-size: var(--font-size-base);
+    color: var(--color-gray-900);
+}
+</style>
+{% endblock %}

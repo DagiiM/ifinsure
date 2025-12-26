@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Product Catalog - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">Product Catalog</h1>
+        <p class="page-subtitle">{{ products|length }} insurance products from {{ providers|length }} providers</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="catalog-filters">
+    <form method="get" class="filter-form">
+        <div class="filter-group">
+            <select name="category" class="filter-select" onchange="this.form.submit()">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat.code }}" {% if selected_category == cat.code %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <select name="provider" class="filter-select" onchange="this.form.submit()">
+                <option value="">All Providers</option>
+                {% for prov in providers %}
+                <option value="{{ prov.code }}" {% if selected_provider == prov.code %}selected{% endif %}>{{ prov.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group search">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search products..." class="filter-input">
+            <button type="submit" class="search-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Product Grid -->
+<div class="product-grid">
+    {% for product in products %}
+    <div class="product-card">
+        <div class="product-header">
+            <div class="provider-badge" style="background: {{ product.provider.primary_color|default:'#6366f1' }}">
+                {{ product.provider.code }}
+            </div>
+            {% if product.featured %}
+            <span class="featured-badge">Featured</span>
+            {% endif %}
+        </div>
+        
+        <span class="product-category">{{ product.category.name }}</span>
+        <h3 class="product-name">{{ product.name }}</h3>
+        <p class="product-desc">{{ product.short_description|default:product.description|truncatechars:100 }}</p>
+        
+        <div class="product-pricing">
+            {% if product.premium_type == 'percentage' %}
+            <span class="price-value">{{ product.base_premium }}%</span>
+            <span class="price-label">of sum insured</span>
+            {% elif product.premium_type == 'fixed' %}
+            <span class="price-value">KES {{ product.base_premium|floatformat:0|intcomma }}</span>
+            <span class="price-label">per year</span>
+            {% else %}
+            <span class="price-value">Custom</span>
+            <span class="price-label">pricing</span>
+            {% endif %}
+        </div>
+        
+        <div class="product-footer">
+            <div class="commission-info">
+                <span class="commission-rate">{{ product.effective_commission_rate }}%</span>
+                <span class="commission-label">commission</span>
+            </div>
+            <a href="{% url 'crm:product_detail' code=product.code %}" class="view-btn">View Details</a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <h3>No products found</h3>
+        <p>Try adjusting your filters or search terms</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_provider %}&provider={{ selected_provider }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">← Previous</a>
+    {% endif %}
+    
+    <span class="page-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_provider %}&provider={{ selected_provider }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">Next →</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<style>
+.catalog-filters {
+    background: white;
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.filter-form {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+.filter-group.search {
+    flex: 2;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-select, .filter-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 10px;
+    font-size: 0.875rem;
+    background: white;
+}
+
+.filter-select:focus, .filter-input:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+}
+
+.search-btn {
+    padding: 0.75rem 1rem;
+    background: var(--color-primary-600);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+@media (max-width: 1100px) {
+    .product-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px) {
+    .product-grid { grid-template-columns: 1fr; }
+}
+
+.product-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s;
+}
+
+.product-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.provider-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+}
+
+.featured-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #d97706;
+    background: #fef3c7;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.product-category {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.product-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: 0.5rem;
+}
+
+.product-desc {
+    font-size: 0.875rem;
+    color: var(--color-gray-600);
+    line-height: 1.5;
+    flex: 1;
+    margin-bottom: 1rem;
+}
+
+.product-pricing {
+    background: var(--color-gray-50);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.price-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+}
+
+.price-label {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.product-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.commission-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.commission-rate {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #16a34a;
+}
+
+.commission-label {
+    font-size: 0.7rem;
+    color: var(--color-gray-500);
+}
+
+.view-btn {
+    padding: 0.5rem 1rem;
+    background: var(--color-primary-600);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.view-btn:hover {
+    background: var(--color-primary-700);
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--color-gray-400);
+}
+
+.empty-state h3 {
+    margin-top: 1rem;
+    color: var(--color-gray-600);
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.page-link {
+    padding: 0.5rem 1rem;
+    background: white;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--color-primary-600);
+    font-weight: 500;
+}
+
+.page-info {
+    color: var(--color-gray-500);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ifinsure - Insurance Agency Management System">
+    <title>{% block title %}ifinsure{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="{% static 'css/variables.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/global-resources.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+        {% include 'includes/sidebar.html' %}
+        {% include 'includes/header.html' %}
+        
+        <main class="main-content">
+            {% include 'includes/messages.html' %}
+            
+            {% block breadcrumbs %}{% endblock %}
+            
+            {% block content %}{% endblock %}
+        </main>
+    {% else %}
+        <main class="auth-layout">
+            {% include 'includes/messages.html' %}
+            {% block auth_content %}{% endblock %}
+        </main>
+    {% endif %}
+    
+    <!-- JavaScript -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

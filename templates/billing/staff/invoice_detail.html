@@ -1,0 +1,645 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'billing:staff_invoices' %}">Invoices</a>
+            <span>›</span>
+            <span>{{ invoice.invoice_number }}</span>
+        </nav>
+        <h1 class="page-title">Invoice {{ invoice.invoice_number }}</h1>
+        <p class="page-subtitle">Created {{ invoice.issued_date|date:"M d, Y" }}</p>
+    </div>
+    <div class="page-header-actions">
+        {% if invoice.status == 'pending' or invoice.status == 'overdue' %}
+        <button onclick="document.getElementById('recordPaymentModal').style.display='flex'" class="record-payment-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Record Payment
+        </button>
+        <form method="post" action="{% url 'billing:staff_invoice_detail' invoice.pk %}" style="display: inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="cancel">
+            <button type="submit" class="cancel-invoice-btn" onclick="return confirm('Cancel this invoice?')">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                Cancel Invoice
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="invoice-detail-layout">
+    <!-- Invoice Details -->
+    <div class="invoice-main-card">
+        <div class="card-header">
+            <h3>Invoice Details</h3>
+            <span class="status-badge status-{{ invoice.status }}">
+                {{ invoice.get_status_display }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="customer-grid">
+                <div class="customer-item">
+                    <span class="item-label">Customer</span>
+                    <span class="item-value">{{ invoice.customer.get_full_name }}</span>
+                </div>
+                <div class="customer-item">
+                    <span class="item-label">Email</span>
+                    <span class="item-value">{{ invoice.customer.email }}</span>
+                </div>
+                <div class="customer-item">
+                    <span class="item-label">Phone</span>
+                    <span class="item-value">{{ invoice.customer.phone|default:"-" }}</span>
+                </div>
+                <div class="customer-item">
+                    <span class="item-label">Related Policy</span>
+                    <span class="item-value">
+                        {% if invoice.policy %}
+                        <a href="{% url 'policies:detail' invoice.policy.pk %}">{{ invoice.policy.policy_number }}</a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="invoice-amounts">
+                <div class="amount-row">
+                    <span>Issued Date</span>
+                    <span>{{ invoice.issued_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="amount-row">
+                    <span>Due Date</span>
+                    <span class="{% if invoice.is_overdue %}text-danger{% endif %}">
+                        {{ invoice.due_date|date:"M d, Y" }}
+                        {% if invoice.is_overdue %}<span class="overdue-tag">Overdue</span>{% endif %}
+                    </span>
+                </div>
+                <div class="amount-row">
+                    <span>Invoice Amount</span>
+                    <span>KES {{ invoice.amount|intcomma }}</span>
+                </div>
+                <div class="amount-row">
+                    <span>Paid Amount</span>
+                    <span class="text-success">KES {{ invoice.paid_amount|intcomma }}</span>
+                </div>
+                <div class="amount-row total-row">
+                    <span>Balance Due</span>
+                    <span class="{% if invoice.balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                        KES {{ invoice.balance|intcomma }}
+                    </span>
+                </div>
+            </div>
+            
+            {% if invoice.description %}
+            <div class="description-section">
+                <h4>Description</h4>
+                <p>{{ invoice.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Payment Status Sidebar -->
+    <div class="invoice-sidebar">
+        <div class="sidebar-card">
+            <h4>Payment Status</h4>
+            <div class="progress-section">
+                {% widthratio invoice.paid_amount invoice.amount 100 as paid_percent %}
+                <div class="progress-header">
+                    <span>Payment Progress</span>
+                    <span class="progress-percent">{{ paid_percent|default:0 }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ paid_percent|default:0 }}%;"></div>
+                </div>
+            </div>
+            
+            <div class="payments-count">
+                <span class="count-value">{{ payments.count }}</span>
+                <span class="count-label">Payment(s) Recorded</span>
+            </div>
+            
+            {% if invoice.status != 'paid' and invoice.status != 'cancelled' %}
+            <div class="status-alert {% if invoice.is_overdue %}alert-danger{% else %}alert-warning{% endif %}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <div>
+                    {% if invoice.is_overdue %}
+                    <strong>Overdue</strong>
+                    <p>This invoice is past its due date.</p>
+                    {% else %}
+                    <strong>Pending Payment</strong>
+                    <p>Due {{ invoice.due_date|date:"M d, Y" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Payment History -->
+    <div class="payments-history-card">
+        <div class="card-header">
+            <h3>Payment History</h3>
+        </div>
+        {% if payments %}
+        <div class="payments-table-wrapper">
+            <table class="payments-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Date</th>
+                        <th>Method</th>
+                        <th>Transaction ID</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td class="ref-cell">{{ payment.payment_reference }}</td>
+                        <td>{{ payment.payment_date|date:"M d, Y H:i" }}</td>
+                        <td>{{ payment.get_payment_method_display }}</td>
+                        <td>{{ payment.transaction_id|default:"-" }}</td>
+                        <td class="amount-cell">KES {{ payment.amount|intcomma }}</td>
+                        <td>
+                            <span class="payment-status status-{{ payment.status }}">
+                                {{ payment.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="payments-empty">
+            <div class="empty-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+            </div>
+            <h4>No Payments Yet</h4>
+            <p>No payments have been recorded for this invoice.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Record Payment Modal -->
+<div id="recordPaymentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Record Payment</h3>
+            <button onclick="document.getElementById('recordPaymentModal').style.display='none'" class="modal-close">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="24" height="24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <form method="post" action="{% url 'billing:staff_invoice_detail' invoice.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="record_payment">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Amount</label>
+                    {{ payment_form.amount }}
+                    <span class="form-hint">Balance: KES {{ invoice.balance|intcomma }}</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Payment Method</label>
+                    {{ payment_form.payment_method }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Transaction ID</label>
+                    {{ payment_form.transaction_id }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    {{ payment_form.notes }}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="document.getElementById('recordPaymentModal').style.display='none'" class="modal-cancel-btn">Cancel</button>
+                <button type="submit" class="modal-submit-btn">Record Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* Breadcrumb */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-600);
+}
+
+.breadcrumb span {
+    color: var(--color-gray-400);
+}
+
+/* Page Header Actions */
+.page-header-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.record-payment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    transition: all 0.15s;
+}
+
+.record-payment-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(34, 197, 94, 0.4);
+}
+
+.cancel-invoice-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.75rem 1.25rem;
+    background: white;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.cancel-invoice-btn:hover {
+    background: #fef2f2;
+}
+
+/* Layout */
+.invoice-detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.5rem;
+}
+
+.payments-history-card {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+    .invoice-detail-layout { grid-template-columns: 1fr; }
+}
+
+/* Main Card */
+.invoice-main-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.invoice-main-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.invoice-main-card .card-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.invoice-main-card .card-body {
+    padding: 1.5rem;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.375rem 0.875rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-badge.status-draft { background: #f3f4f6; color: #6b7280; }
+.status-badge.status-pending { background: #fef3c7; color: #92400e; }
+.status-badge.status-partial { background: #dbeafe; color: #1e40af; }
+.status-badge.status-paid { background: #dcfce7; color: #166534; }
+.status-badge.status-overdue { background: #fee2e2; color: #991b1b; }
+.status-badge.status-cancelled { background: #f3f4f6; color: #6b7280; }
+
+/* Customer Grid */
+.customer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.customer-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.item-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.item-value {
+    font-size: 0.95rem;
+    color: var(--color-gray-900);
+}
+
+.item-value a {
+    color: var(--color-primary-600);
+    text-decoration: none;
+}
+
+/* Invoice Amounts */
+.invoice-amounts {
+    background: var(--color-gray-50);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.amount-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--color-gray-200);
+    font-size: 0.9rem;
+}
+
+.amount-row:last-child {
+    border-bottom: none;
+}
+
+.amount-row.total-row {
+    font-size: 1rem;
+    font-weight: 700;
+    border-top: 2px solid var(--color-gray-300);
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+}
+
+.overdue-tag {
+    display: inline-block;
+    margin-left: 0.5rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.125rem 0.375rem;
+    background: #fee2e2;
+    color: #dc2626;
+    border-radius: 4px;
+}
+
+.description-section {
+    margin-top: 1.5rem;
+}
+
+.description-section h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+}
+
+.description-section p {
+    color: var(--color-gray-600);
+    margin: 0;
+}
+
+/* Sidebar */
+.invoice-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sidebar-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.sidebar-card h4 {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.progress-section {
+    margin-bottom: 1.5rem;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--color-gray-600);
+}
+
+.progress-percent {
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+.progress-bar {
+    height: 10px;
+    background: var(--color-gray-200);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+    border-radius: 20px;
+    transition: width 0.3s ease;
+}
+
+.payments-count {
+    text-align: center;
+    padding: 1rem;
+    background: var(--color-gray-50);
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.payments-count .count-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+}
+
+.payments-count .count-label {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.status-alert {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 10px;
+}
+
+.status-alert.alert-warning {
+    background: #fffbeb;
+    color: #92400e;
+}
+
+.status-alert.alert-danger {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.status-alert strong {
+    display: block;
+    font-size: 0.85rem;
+}
+
+.status-alert p {
+    margin: 0;
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+/* Payments History */
+.payments-history-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.payments-history-card .card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.payments-history-card .card-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.payments-table-wrapper {
+    overflow-x: auto;
+}
+
+.payments-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.payments-table th {
+    padding: 1rem 1.25rem;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-gray-500);
+    background: var(--color-gray-50);
+}
+
+.payments-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    font-size: 0.9rem;
+}
+
+.payments-table tr:last-child td {
+    border-bottom: none;
+}
+
+.ref-cell {
+    font-weight: 600;
+}
+
+.amount-cell {
+    font-weight: 700;
+}
+
+.payment-status {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    border-radius: 5px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.payment-status.status-completed { background: #dcfce7; color: #166534; }
+.payment-status.status-pending { background: #fef3c7; color: #92400e; }
+.payment-status.status-failed { background: #fee2e2; color: #991b1b; }
+
+.payments-empty {
+    padding: 3rem;
+    text-align: center;
+}
+
+.payments-empty .empty-icon {
+    color: var(--color-gray-300);
+    margin-bottom: 1rem;
+}
+
+.payments-empty h4 {
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+}
+
+.payments-empty p {
+    color: var(--color-gray-500);
+    margin: 0;
+}
+
+.text-success { color: #16a34a; }
+.text-danger { color: #dc2626; }
+</style>
+{% endblock %}

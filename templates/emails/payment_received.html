@@ -1,0 +1,105 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}Payment Received - ifinsure{% endblock %}
+
+{% block content %}
+<p class="email-greeting">Payment Received Successfully! </p>
+
+<p class="email-text">
+    Dear {{ user.first_name }},
+</p>
+
+<p class="email-text">
+    Thank you for your payment. We have successfully received and processed your payment.
+</p>
+
+<div class="alert alert-success">
+     Your payment has been confirmed and applied to your account!
+</div>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Payment Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Receipt Number</span>
+        <span class="highlight-value">{{ payment.receipt_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Invoice Number</span>
+        <span class="highlight-value">{{ payment.invoice.invoice_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Payment Method</span>
+        <span class="highlight-value">{{ payment.get_payment_method_display }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Amount Paid</span>
+        <span class="highlight-value" style="font-size: 1.8px; color: #059669;">KES {{ payment.amount|floatformat:0|intcomma }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Transaction Reference</span>
+        <span class="highlight-value">{{ payment.transaction_reference }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Payment Date</span>
+        <span class="highlight-value">{{ payment.payment_date|date:"F d, Y H:i" }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Status</span>
+        <span class="highlight-value">
+            <span class="status-badge status-success">Successful</span>
+        </span>
+    </div>
+</div>
+
+{% if invoice_status == 'paid' %}
+<div class="alert alert-success">
+     Invoice #{{ payment.invoice.invoice_number }} has been fully paid.
+</div>
+{% elif invoice_status == 'partial' %}
+<div class="alert alert-warning">
+     Partial payment received. Remaining balance: KES {{ remaining_balance|floatformat:0|intcomma }}
+</div>
+{% endif %}
+
+<div class="button-container">
+    <a href="{{ site_url }}/billing/payments/{{ payment.pk }}/receipt/" class="button">Download Receipt</a>
+</div>
+
+<p class="email-text">
+    <strong>Payment Summary:</strong>
+</p>
+
+<div class="highlight-box">
+    <div class="highlight-item">
+        <span class="highlight-label">Policy</span>
+        <span class="highlight-value">{{ payment.invoice.policy.policy_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Product</span>
+        <span class="highlight-value">{{ payment.invoice.policy.product.name }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Coverage Status</span>
+        <span class="highlight-value">
+            <span class="status-badge status-success">Active</span>
+        </span>
+    </div>
+</div>
+
+<p class="email-text">
+    This receipt confirms your payment. Please keep this email for your records. You can also download the official receipt from your dashboard at any time.
+</p>
+
+<div class="alert alert-info">
+     <strong>Tip:</strong> Enable automatic payments to never miss a payment again!
+</div>
+
+<p class="email-text">
+    Thank you for choosing ifinsure. We appreciate your trust in us.
+</p>
+
+<p class="email-text">
+    Best regards,<br>
+    <strong>The ifinsure Team</strong>
+</p>
+{% endblock %}

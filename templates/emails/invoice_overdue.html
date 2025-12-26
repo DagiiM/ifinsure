@@ -1,0 +1,77 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}Invoice Overdue - ifinsure{% endblock %}
+
+{% block content %}
+<p class="email-greeting">Urgent: Payment Overdue </p>
+
+<p class="email-text">
+    Dear {{ user.first_name }},
+</p>
+
+<p class="email-text">
+    This is an urgent reminder that your invoice payment is now <strong>{{ days_overdue }} days overdue</strong>. Please take immediate action to avoid any disruption to your coverage.
+</p>
+
+<div class="alert alert-danger">
+     <strong>Immediate Action Required:</strong> Your payment is overdue. Your coverage may be affected.
+</div>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Invoice Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Invoice Number</span>
+        <span class="highlight-value">{{ invoice.invoice_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Policy</span>
+        <span class="highlight-value">{{ invoice.policy.policy_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Amount Due</span>
+        <span class="highlight-value" style="font-size: 1.8px; color: #dc2626;">KES {{ invoice.total_amount|floatformat:0|intcomma }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Due Date</span>
+        <span class="highlight-value" style="color: #dc2626; font-weight: 700;">{{ invoice.due_date|date:"F d, Y" }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Days Overdue</span>
+        <span class="highlight-value" style="color: #dc2626;">{{ days_overdue }} days</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Status</span>
+        <span class="highlight-value">
+            <span class="status-badge status-danger">Overdue</span>
+        </span>
+    </div>
+</div>
+
+<div class="button-container">
+    <a href="{{ site_url }}/billing/invoices/{{ invoice.pk }}/" class="button" style="background: #dc2626;">Pay Now to Avoid Suspension</a>
+</div>
+
+<p class="email-text">
+    <strong>What happens if payment is not received?</strong>
+</p>
+
+<ul style="color: #4b5563; margin: 16px 0 24px 20px;">
+    <li style="margin-bottom: 8px;"> Your policy may be suspended after 14 days overdue</li>
+    <li style="margin-bottom: 8px;"> Any claims during suspension period will not be covered</li>
+    <li style="margin-bottom: 8px;"> Late payment fees may be applied</li>
+    <li style="margin-bottom: 8px;"> Your policy may be cancelled after 30 days overdue</li>
+</ul>
+
+<div class="alert alert-warning">
+     <strong>Need help?</strong> If you're experiencing financial difficulties, please contact us. We may be able to arrange a payment plan.
+</div>
+
+<p class="email-text">
+    We value you as a customer and want to help you maintain your coverage. Please make your payment as soon as possible or contact us to discuss your options.
+</p>
+
+<p class="email-text">
+    Best regards,<br>
+    <strong>The ifinsure Billing Team</strong>
+</p>
+{% endblock %}

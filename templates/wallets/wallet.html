@@ -1,0 +1,533 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}My Wallet - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">My Wallet</h1>
+        <p class="page-subtitle">Manage your funds, deposits, and transaction history</p>
+    </div>
+</div>
+
+<div class="wallet-dashboard">
+    <!-- Balance Card -->
+    <div class="wallet-balance-card">
+        <div class="wallet-balance-header">
+            <div class="wallet-balance-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+            </div>
+            <span class="wallet-balance-label">Available Balance</span>
+        </div>
+        <div class="wallet-balance-amount">
+            <span class="wallet-currency">{{ wallet.currency }}</span>
+            <span class="wallet-amount">{{ wallet.balance|floatformat:2|intcomma }}</span>
+        </div>
+        <div class="wallet-balance-actions">
+            <a href="{% url 'wallets:deposit' %}" class="btn btn-primary">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Deposit Funds
+            </a>
+            <a href="{% url 'wallets:transactions' %}" class="btn btn-outline">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                View History
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="wallet-stats">
+        <div class="wallet-stat-card">
+            <div class="wallet-stat-icon deposits">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>
+                </svg>
+            </div>
+            <div class="wallet-stat-info">
+                <span class="wallet-stat-value">{{ total_deposits }}</span>
+                <span class="wallet-stat-label">Total Deposits</span>
+            </div>
+        </div>
+        <div class="wallet-stat-card">
+            <div class="wallet-stat-icon payments">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path>
+                </svg>
+            </div>
+            <div class="wallet-stat-info">
+                <span class="wallet-stat-value">{{ total_payments }}</span>
+                <span class="wallet-stat-label">Total Payments</span>
+            </div>
+        </div>
+        <div class="wallet-stat-card">
+            <div class="wallet-stat-icon pending">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="wallet-stat-info">
+                <span class="wallet-stat-value">{{ pending_deposits|length }}</span>
+                <span class="wallet-stat-label">Pending</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pending Deposits -->
+    {% if pending_deposits %}
+    <div class="wallet-section">
+        <h3 class="wallet-section-title">Pending Deposits</h3>
+        <div class="wallet-pending-list">
+            {% for deposit in pending_deposits %}
+            <div class="wallet-pending-item">
+                <div class="wallet-pending-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="wallet-pending-info">
+                    <span class="wallet-pending-ref">{{ deposit.reference }}</span>
+                    <span class="wallet-pending-method">{{ deposit.payment_method.name }}</span>
+                </div>
+                <div class="wallet-pending-amount">
+                    {{ deposit.currency }} {{ deposit.amount|floatformat:0|intcomma }}
+                </div>
+                <span class="wallet-pending-status status-{{ deposit.status }}">{{ deposit.get_status_display }}</span>
+                {% if deposit.status == 'awaiting_proof' %}
+                <a href="{% url 'wallets:deposit_proof' payment_ref=deposit.reference %}" class="btn btn-sm btn-primary">Upload Proof</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Recent Transactions -->
+    <div class="wallet-section">
+        <div class="wallet-section-header">
+            <h3 class="wallet-section-title">Recent Transactions</h3>
+            <a href="{% url 'wallets:transactions' %}" class="wallet-section-link">View All →</a>
+        </div>
+        
+        {% if recent_transactions %}
+        <div class="wallet-transactions">
+            {% for tx in recent_transactions %}
+            <div class="wallet-tx-item">
+                <div class="wallet-tx-icon {% if tx.is_credit %}credit{% else %}debit{% endif %}">
+                    {% if tx.is_credit %}
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>
+                    </svg>
+                    {% else %}
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path>
+                    </svg>
+                    {% endif %}
+                </div>
+                <div class="wallet-tx-info">
+                    <span class="wallet-tx-type">{{ tx.get_transaction_type_display }}</span>
+                    <span class="wallet-tx-desc">{{ tx.description|default:"—" }}</span>
+                </div>
+                <div class="wallet-tx-details">
+                    <span class="wallet-tx-amount {% if tx.is_credit %}credit{% else %}debit{% endif %}">
+                        {% if tx.is_credit %}+{% endif %}{{ wallet.currency }} {{ tx.amount|floatformat:0|intcomma }}
+                    </span>
+                    <span class="wallet-tx-date">{{ tx.created_at|date:"M d, Y" }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="48" height="48">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+            <h4>No transactions yet</h4>
+            <p>Make your first deposit to get started</p>
+            <a href="{% url 'wallets:deposit' %}" class="btn btn-primary">Deposit Funds</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.wallet-dashboard {
+    display: grid;
+    gap: 1.5rem;
+}
+
+/* Balance Card */
+.wallet-balance-card {
+    background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-800));
+    border-radius: 20px;
+    padding: 2rem;
+    color: white;
+}
+
+.wallet-balance-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.wallet-balance-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wallet-balance-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.wallet-balance-label {
+    font-size: 0.875rem;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.wallet-balance-amount {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.wallet-currency {
+    font-size: 1.25rem;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.wallet-amount {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.wallet-balance-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.wallet-balance-actions .btn {
+    flex: 1;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.wallet-balance-actions .btn-primary {
+    background: white;
+    color: var(--color-primary-700);
+}
+
+.wallet-balance-actions .btn-primary:hover {
+    background: rgba(255,255,255,0.9);
+}
+
+.wallet-balance-actions .btn-outline {
+    background: transparent;
+    border-color: rgba(255,255,255,0.4);
+    color: white;
+}
+
+.wallet-balance-actions .btn-outline:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: white;
+}
+
+/* Stats */
+.wallet-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .wallet-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+.wallet-stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.wallet-stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wallet-stat-icon.deposits {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.wallet-stat-icon.payments {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.wallet-stat-icon.pending {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.wallet-stat-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.wallet-stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.wallet-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+.wallet-stat-label {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Sections */
+.wallet-section {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.wallet-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.wallet-section-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+.wallet-section-link {
+    font-size: 0.875rem;
+    color: var(--color-primary-600);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+/* Pending */
+.wallet-pending-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.wallet-pending-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--color-gray-50);
+    border-radius: 10px;
+}
+
+.wallet-pending-icon {
+    width: 36px;
+    height: 36px;
+    background: #fef3c7;
+    color: #d97706;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wallet-pending-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.wallet-pending-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.wallet-pending-ref {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.wallet-pending-method {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+.wallet-pending-amount {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.wallet-pending-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+}
+
+.status-awaiting_proof {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-proof_submitted {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.status-verifying {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+/* Transactions */
+.wallet-transactions {
+    display: flex;
+    flex-direction: column;
+}
+
+.wallet-tx-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.wallet-tx-item:last-child {
+    border-bottom: none;
+}
+
+.wallet-tx-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wallet-tx-icon.credit {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.wallet-tx-icon.debit {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.wallet-tx-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.wallet-tx-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.wallet-tx-type {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.wallet-tx-desc {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wallet-tx-details {
+    text-align: right;
+}
+
+.wallet-tx-amount {
+    display: block;
+    font-weight: 700;
+}
+
+.wallet-tx-amount.credit {
+    color: #16a34a;
+}
+
+.wallet-tx-amount.debit {
+    color: #dc2626;
+}
+
+.wallet-tx-date {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--color-gray-400);
+}
+
+.empty-state svg {
+    margin-bottom: 1rem;
+}
+
+.empty-state h4 {
+    font-size: 1.125rem;
+    color: var(--color-gray-700);
+    margin-bottom: 0.25rem;
+}
+
+.empty-state p {
+    margin-bottom: 1.5rem;
+}
+</style>
+{% endblock %}

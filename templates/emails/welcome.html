@@ -1,0 +1,56 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}Welcome to ifinsure{% endblock %}
+
+{% block content %}
+<p class="email-greeting">Welcome to ifinsure, {{ user.first_name }}! </p>
+
+<p class="email-text">
+    We're thrilled to have you on board! Your account has been created successfully, and you're now part of Kenya's most trusted insurance management platform.
+</p>
+
+<div class="alert alert-success">
+     Your account is now active and ready to use!
+</div>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Your Account Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Username</span>
+        <span class="highlight-value">{{ user.username }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Email</span>
+        <span class="highlight-value">{{ user.email }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Account Type</span>
+        <span class="highlight-value">{{ user.get_role_display }}</span>
+    </div>
+</div>
+
+<p class="email-text">
+    Here's what you can do with your ifinsure account:
+</p>
+
+<ul style="color: #4b5563; margin: 16px 0 24px 20px;">
+    <li style="margin-bottom: 8px;"> Browse and compare insurance products</li>
+    <li style="margin-bottom: 8px;"> Apply for new policies online</li>
+    <li style="margin-bottom: 8px;"> View and pay your invoices</li>
+    <li style="margin-bottom: 8px;"> File and track claims</li>
+    <li style="margin-bottom: 8px;"> Access your insurance dashboard</li>
+</ul>
+
+<div class="button-container">
+    <a href="{{ site_url }}/dashboard/" class="button">Go to My Dashboard</a>
+</div>
+
+<p class="email-text">
+    If you have any questions or need assistance, our support team is here to help. Simply reply to this email or visit our help center.
+</p>
+
+<p class="email-text">
+    Best regards,<br>
+    <strong>The ifinsure Team</strong>
+</p>
+{% endblock %}

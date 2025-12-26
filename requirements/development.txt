@@ -1,0 +1,5 @@
+# Development dependencies
+-r base.txt
+
+# Debug toolbar for development
+django-debug-toolbar>=4.4,<5.0

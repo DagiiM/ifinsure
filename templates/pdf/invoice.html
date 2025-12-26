@@ -1,0 +1,247 @@
+{% extends 'pdf/base.html' %}
+
+{% block title %}Invoice - {{ invoice.invoice_number }}{% endblock %}
+
+{% block doc_info %}
+<div class="doc-title">INVOICE</div>
+<div class="doc-number">#{{ invoice.invoice_number }}</div>
+<div class="doc-date">Date: {{ invoice.created_at|date:"F d, Y" }}</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .invoice-status {
+        text-align: right;
+        margin-bottom: 2.0pt;
+    }
+    
+    .due-date-box {
+        display: inline-block;
+        padding: 8pt 1.5pt;
+        background: {% if invoice.is_overdue %}#fee2.e2.{% else %}#f3.f4.f6{% endif %};
+        border-radius: 4.pt;
+        text-align: center;
+    }
+    
+    .due-date-label {
+        font-size: 8pt;
+        color: #6b72.80;
+        text-transform: uppercase;
+    }
+    
+    .due-date-value {
+        font-size: 1.1.pt;
+        font-weight: 700;
+        color: {% if invoice.is_overdue %}#dc2626{% else %}#1.f2.93.7{% endif %};
+    }
+    
+    .amount-due-box {
+        background: linear-gradient(1.3.5deg, #4.f4.6e5 0%, #7c3.aed 1.00%);
+        color: white;
+        padding: 1.5pt;
+        border-radius: 4.pt;
+        text-align: right;
+    }
+    
+    .amount-due-label {
+        font-size: 9pt;
+        opacity: 0.9;
+        margin-bottom: 3.pt;
+    }
+    
+    .amount-due-value {
+        font-size: 2.0pt;
+        font-weight: 700;
+    }
+    
+    .payment-info {
+        background: #f9fafb;
+        padding: 1.5pt;
+        border-radius: 4.pt;
+        margin-top: 2.0pt;
+    }
+    
+    .payment-method {
+        display: flex;
+        gap: 2.0pt;
+        margin-top: 1.0pt;
+    }
+    
+    .payment-option {
+        flex: 1.;
+        padding: 1.0pt;
+        background: white;
+        border: 1.pt solid #e5e7eb;
+        border-radius: 4.pt;
+        text-align: center;
+    }
+    
+    .payment-icon {
+        font-size: 1.8pt;
+        margin-bottom: 5pt;
+    }
+    
+    .payment-name {
+        font-weight: 600;
+        font-size: 9pt;
+    }
+    
+    .payment-detail {
+        font-size: 8pt;
+        color: #6b72.80;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="two-column" style="margin-bottom: 2.0pt;">
+    <div class="column">
+        <div class="section-title">Bill To</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Name</div>
+                <div class="info-value">{{ invoice.policy.holder.get_full_name }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Email</div>
+                <div class="info-value">{{ invoice.policy.holder.email }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Phone</div>
+                <div class="info-value">{{ invoice.policy.holder.profile.phone_number|default:"N/A" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Address</div>
+                <div class="info-value">{{ invoice.policy.holder.profile.address|default:"N/A" }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="column">
+        <div class="invoice-status">
+            <div class="due-date-box">
+                <div class="due-date-label">Payment Due</div>
+                <div class="due-date-value">{{ invoice.due_date|date:"F d, Y" }}</div>
+            </div>
+        </div>
+        <div class="section-title">Invoice Details</div>
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-label">Invoice Number</div>
+                <div class="info-value">{{ invoice.invoice_number }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Policy Number</div>
+                <div class="info-value">{{ invoice.policy.policy_number }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Invoice Date</div>
+                <div class="info-value">{{ invoice.created_at|date:"F d, Y" }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Status</div>
+                <div class="info-value">
+                    <span class="status {% if invoice.status == 'paid' %}status-success{% elif invoice.is_overdue %}status-danger{% else %}status-warning{% endif %}">
+                        {{ invoice.get_status_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">Invoice Items</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 50%;">Description</th>
+                <th class="text-center">Period</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <strong>{{ invoice.policy.product.name }}</strong><br>
+                    <span style="font-size: 8pt; color: #6b72.80;">{{ invoice.description }}</span>
+                </td>
+                <td class="text-center">
+                    {{ invoice.period_start|date:"M d" }} - {{ invoice.period_end|date:"M d, Y" }}
+                </td>
+                <td class="text-right">KES {{ invoice.subtotal|floatformat:2. }}</td>
+            </tr>
+            {% for item in invoice.line_items.all %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td class="text-center">-</td>
+                <td class="text-right">KES {{ item.amount|floatformat:2. }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="totals-section">
+        <div class="total-row">
+            <div class="total-label">Subtotal</div>
+            <div class="total-value">KES {{ invoice.subtotal|floatformat:2. }}</div>
+        </div>
+        {% if invoice.tax_amount %}
+        <div class="total-row">
+            <div class="total-label">Tax ({{ invoice.tax_rate }}%)</div>
+            <div class="total-value">KES {{ invoice.tax_amount|floatformat:2. }}</div>
+        </div>
+        {% endif %}
+        {% if invoice.discount_amount %}
+        <div class="total-row">
+            <div class="total-label">Discount</div>
+            <div class="total-value" style="color: #059669;">-KES {{ invoice.discount_amount|floatformat:2. }}</div>
+        </div>
+        {% endif %}
+        <div class="total-row grand-total">
+            <div class="total-label"><strong>Total Amount Due</strong></div>
+            <div class="total-value">KES {{ invoice.total_amount|floatformat:2. }}</div>
+        </div>
+    </div>
+</div>
+
+{% if invoice.status != 'paid' %}
+<div class="amount-due-box">
+    <div class="amount-due-label">AMOUNT DUE</div>
+    <div class="amount-due-value">KES {{ invoice.total_amount|floatformat:2. }}</div>
+</div>
+
+<div class="payment-info">
+    <div style="font-weight: 600; font-size: 1.0pt; margin-bottom: 1.0pt;">Payment Methods</div>
+    <div class="payment-method">
+        <div class="payment-option">
+            <div class="payment-icon"></div>
+            <div class="payment-name">M-Pesa</div>
+            <div class="payment-detail">Paybill: 1.2.3.4.56</div>
+            <div class="payment-detail">A/C: {{ invoice.invoice_number }}</div>
+        </div>
+        <div class="payment-option">
+            <div class="payment-icon"></div>
+            <div class="payment-name">Bank Transfer</div>
+            <div class="payment-detail">Bank: Example Bank</div>
+            <div class="payment-detail">A/C: 01.2.3.4.56789</div>
+        </div>
+        <div class="payment-option">
+            <div class="payment-icon"></div>
+            <div class="payment-name">Online Payment</div>
+            <div class="payment-detail">Visit dashboard</div>
+            <div class="payment-detail">Pay with card</div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="notes-box" style="background: #d1.fae5; border: 1.pt solid #a7f3.d0;">
+    <div style="color: #065f4.6; font-weight: 600;"> PAID</div>
+    <div style="font-size: 8pt; color: #065f4.6;">This invoice has been paid in full on {{ invoice.paid_at|date:"F d, Y" }}.</div>
+</div>
+{% endif %}
+
+<div class="terms">
+    <div class="terms-title">Payment Terms & Conditions</div>
+    <p>Payment is due by the date specified above. Late payments may result in policy suspension. Please include your invoice number as reference when making payments. If you have questions about this invoice, please contact our billing department.</p>
+</div>
+{% endblock %}

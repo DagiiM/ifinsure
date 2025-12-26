@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Admin Dashboard - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Administration Dashboard</h1>
+    <p>System-wide overview and management</p>
+</div>
+
+<!-- Overview Stats -->
+<div class="grid grid-4 gap-4 mb-6">
+    <div class="stat-card">
+        <div class="stat-card-label">Total Users</div>
+        <div class="stat-card-value">{{ total_users }}</div>
+        <div class="stat-card-trend">
+            {{ customers }} customers • {{ agents }} agents
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Active Policies</div>
+        <div class="stat-card-value">{{ total_policies }}</div>
+        <div class="stat-card-trend">
+            KES {{ total_coverage|intcomma }} coverage
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Total Claims</div>
+        <div class="stat-card-value">{{ total_claims }}</div>
+        <div class="stat-card-trend {% if pending_claims > 0 %}text-warning{% endif %}">
+            {{ pending_claims }} pending
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Revenue Collected</div>
+        <div class="stat-card-value">KES {{ total_collected|intcomma }}</div>
+        <div class="stat-card-trend">
+            of KES {{ total_invoiced|intcomma }} invoiced
+        </div>
+    </div>
+</div>
+
+<!-- Financial Overview -->
+<div class="grid grid-3 gap-6 mb-6">
+    <div class="stat-card">
+        <div class="stat-card-label">Monthly Premiums</div>
+        <div class="stat-card-value">KES {{ monthly_premiums|intcomma }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Claims Approved</div>
+        <div class="stat-card-value">KES {{ claims_value|intcomma }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label">Overdue Amount</div>
+        <div class="stat-card-value {% if overdue_amount > 0 %}text-danger{% endif %}">KES {{ overdue_amount|intcomma }}</div>
+    </div>
+</div>
+
+<div class="grid grid-2 gap-6">
+    <!-- Recent Policies -->
+    <div class="card">
+        <div class="card-header flex justify-between items-center">
+            <h4>Recent Policies</h4>
+            <a href="{% url 'policies:agent_policies' %}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body p-0">
+            {% if recent_policies %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Policy</th>
+                        <th>Customer</th>
+                        <th>Premium</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for policy in recent_policies %}
+                    <tr>
+                        <td>{{ policy.policy_number }}</td>
+                        <td>{{ policy.customer.get_full_name }}</td>
+                        <td>KES {{ policy.premium_amount|intcomma }}</td>
+                        <td>{{ policy.created_at|date:"M d" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No policies yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Recent Claims -->
+    <div class="card">
+        <div class="card-header flex justify-between items-center">
+            <h4>Recent Claims</h4>
+            <a href="{% url 'claims:staff_list' %}" class="btn btn-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body p-0">
+            {% if recent_claims %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Claim</th>
+                        <th>Claimant</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for claim in recent_claims %}
+                    <tr>
+                        <td>{{ claim.claim_number }}</td>
+                        <td>{{ claim.claimant.get_full_name }}</td>
+                        <td>KES {{ claim.claimed_amount|intcomma }}</td>
+                        <td>
+                            <span class="badge badge-{% if claim.status == 'approved' or claim.status == 'paid' %}success{% elif claim.status == 'rejected' %}danger{% else %}warning{% endif %}">
+                                {{ claim.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No claims yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mt-6">
+    <div class="card-header">
+        <h4>Quick Actions</h4>
+    </div>
+    <div class="card-body">
+        <div class="flex gap-4 flex-wrap">
+            <a href="/admin/" class="btn btn-primary">Admin Panel</a>
+            <a href="{% url 'policies:agent_applications' %}" class="btn btn-secondary">
+                Review Applications
+                {% if pending_applications > 0 %}
+                <span class="badge badge-warning">{{ pending_applications }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'claims:staff_list' %}?status=submitted" class="btn btn-secondary">
+                Process Claims
+                {% if pending_claims > 0 %}
+                <span class="badge badge-warning">{{ pending_claims }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'billing:staff_invoices' %}" class="btn btn-secondary">Billing</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

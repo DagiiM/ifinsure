@@ -1,0 +1,231 @@
+{% extends 'pdf/base.html' %}
+
+{% block title %}Receipt - {{ payment.receipt_number }}{% endblock %}
+
+{% block doc_info %}
+<div class="doc-title">PAYMENT RECEIPT</div>
+<div class="doc-number">#{{ payment.receipt_number }}</div>
+<div class="doc-date">Date: {{ payment.payment_date|date:"F d, Y" }}</div>
+{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .receipt-badge {
+        text-align: center;
+        margin: 1.5pt 0;
+        padding: 1.2.pt;
+        background: #d1.fae5;
+        border: 2.pt solid #059669;
+        border-radius: 4.pt;
+    }
+    
+    .receipt-status {
+        font-size: 14pt;
+        font-weight: 700;
+        color: #059669;
+    }
+    
+    .receipt-message {
+        font-size: 9pt;
+        color: #065f4.6;
+        margin-top: 3.pt;
+    }
+    
+    .amount-box {
+        text-align: center;
+        padding: 2.0pt;
+        background: #f3.f4.f6;
+        border-radius: 4.pt;
+        margin: 2.0pt 0;
+    }
+    
+    .amount-label {
+        font-size: 1.0pt;
+        color: #6b72.80;
+        text-transform: uppercase;
+        letter-spacing: 0.5pt;
+    }
+    
+    .amount-value {
+        font-size: 2.8pt;
+        font-weight: 700;
+        color: #059669;
+        margin: 5pt 0;
+    }
+    
+    .amount-words {
+        font-size: 9pt;
+        color: #3.74.1.51.;
+        font-style: italic;
+    }
+    
+    .qr-code {
+        text-align: center;
+        margin: 2.0pt 0;
+    }
+    
+    .qr-placeholder {
+        width: 80pt;
+        height: 80pt;
+        margin: 0 auto;
+        border: 1.pt solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8pt;
+        color: #9ca3.af;
+    }
+    
+    .verification-code {
+        font-family: monospace;
+        font-size: 1.0pt;
+        color: #6b72.80;
+        margin-top: 5pt;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="receipt-badge">
+    <div class="receipt-status"> PAYMENT SUCCESSFUL</div>
+    <div class="receipt-message">Thank you for your payment. Keep this receipt for your records.</div>
+</div>
+
+<div class="section">
+    <div class="section-title">Payment Details</div>
+    <div class="two-column">
+        <div class="column">
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-label">Receipt Number</div>
+                    <div class="info-value">{{ payment.receipt_number }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Payment Date</div>
+                    <div class="info-value">{{ payment.payment_date|date:"F d, Y H:i" }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Payment Method</div>
+                    <div class="info-value">{{ payment.get_payment_method_display }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Transaction Ref</div>
+                    <div class="info-value">{{ payment.transaction_reference }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="column">
+            <div class="info-grid">
+                <div class="info-row">
+                    <div class="info-label">Invoice Number</div>
+                    <div class="info-value">{{ payment.invoice.invoice_number }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Policy Number</div>
+                    <div class="info-value">{{ payment.invoice.policy.policy_number }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Product</div>
+                    <div class="info-value">{{ payment.invoice.policy.product.name }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">
+                        <span class="status status-success">Confirmed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title">Received From</div>
+    <div class="info-grid">
+        <div class="info-row">
+            <div class="info-label">Name</div>
+            <div class="info-value">{{ payment.invoice.policy.holder.get_full_name }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Email</div>
+            <div class="info-value">{{ payment.invoice.policy.holder.email }}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-label">Phone</div>
+            <div class="info-value">{{ payment.invoice.policy.holder.profile.phone_number|default:"N/A" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="amount-box">
+    <div class="amount-label">Amount Received</div>
+    <div class="amount-value">KES {{ payment.amount|floatformat:2. }}</div>
+    <div class="amount-words">{{ payment.amount_in_words }}</div>
+</div>
+
+<div class="section">
+    <div class="section-title">Payment Breakdown</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 60%;">Description</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ payment.invoice.description }}</td>
+                <td class="text-right">KES {{ payment.amount|floatformat:2. }}</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="totals-section">
+        <div class="total-row grand-total">
+            <div class="total-label"><strong>Total Paid</strong></div>
+            <div class="total-value" style="color: #059669;">KES {{ payment.amount|floatformat:2. }}</div>
+        </div>
+    </div>
+</div>
+
+{% if payment.invoice.balance_due > 0 %}
+<div class="notes-box" style="background: #fef3.c7; border: 1.pt solid #fcd3.4.d;">
+    <div class="notes-title" style="color: #92.4.00e;">Remaining Balance</div>
+    <div class="notes-text" style="color: #92.4.00e;">
+        There is a remaining balance of KES {{ payment.invoice.balance_due|floatformat:2. }} on this invoice.
+    </div>
+</div>
+{% else %}
+<div class="notes-box" style="background: #d1.fae5; border: 1.pt solid #a7f3.d0;">
+    <div class="notes-title" style="color: #065f4.6;">Invoice Fully Paid</div>
+    <div class="notes-text" style="color: #065f4.6;">
+        Invoice #{{ payment.invoice.invoice_number }} has been paid in full. Thank you!
+    </div>
+</div>
+{% endif %}
+
+<div class="qr-code">
+    <div class="qr-placeholder">
+        [QR Code]<br>
+        Scan to verify
+    </div>
+    <div class="verification-code">Verification: {{ payment.verification_code|default:payment.receipt_number }}</div>
+</div>
+
+<div class="signature-section">
+    <div class="signature-box">
+        <div class="signature-line"></div>
+        <div class="signature-label">Received By</div>
+    </div>
+    <div></div>
+    <div class="signature-box">
+        <div class="signature-line"></div>
+        <div class="signature-label">Date & Stamp</div>
+    </div>
+</div>
+
+<div class="terms">
+    <div class="terms-title">Note</div>
+    <p>This is an official receipt issued by ifinsure. This receipt is computer generated and is valid without signature. For any queries regarding this payment, please contact our billing department with the receipt number.</p>
+</div>
+{% endblock %}

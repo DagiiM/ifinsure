@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Complete Your Applications - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1>Complete Your Applications</h1>
+        <p class="text-muted">Review and submit your insurance applications</p>
+    </div>
+</div>
+
+<div class="content-wrapper">
+    {% if cart.is_empty %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-muted mb-3">
+                <circle cx="9" cy="21" r="1"/>
+                <circle cx="20" cy="21" r="1"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+            <h3>Your cart is empty</h3>
+            <p class="text-muted">Add some insurance products to your cart first.</p>
+            <a href="{% url 'policies:products' %}" class="btn btn-primary mt-3">Browse Products</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="card-title">Your Selected Products</h2>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Coverage</th>
+                                <th>Term</th>
+                                <th class="text-right">Premium</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.product_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ item.category|title }}</small>
+                                </td>
+                                <td>KES {{ item.coverage_amount|floatformat:0 }}</td>
+                                <td>{{ item.term_months }} months</td>
+                                <td class="text-right">
+                                    <strong>KES {{ item.premium|floatformat:0 }}</strong>/mo
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>Total Monthly Premium:</strong></td>
+                                <td class="text-right"><strong style="color: var(--color-primary-600);">KES {{ cart.get_total_premium|floatformat:0 }}</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Applicant Information</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Name</label>
+                            <p class="h6">{{ user.get_full_name|default:user.email }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Email</label>
+                            <p class="h6">{{ user.email }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Phone</label>
+                            <p class="h6">{{ user.phone|default:"Not provided" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Account Type</label>
+                            <p class="h6">{{ user.get_user_type_display }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <strong>Note:</strong> Your applications will be created as drafts. You can add beneficiary information and additional details before submitting each one.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card" style="position: sticky; top: 2rem;">
+                <div class="card-header">
+                    <h2 class="card-title">Summary</h2>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Products</span>
+                        <strong>{{ cart|length }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Coverage</span>
+                        <strong>KES {{ cart.get_total_coverage|floatformat:0 }}</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="h6">Monthly Premium</span>
+                        <strong class="h5" style="color: var(--color-primary-600);">KES {{ cart.get_total_premium|floatformat:0 }}</strong>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><path d="M9 12h6M9 16h6M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/></svg>
+                            Create Applications
+                        </button>
+                    </form>
+                    
+                    <a href="{% url 'policies:cart' %}" class="btn btn-outline w-100">
+                        ← Back to Cart
+                    </a>
+                    
+                    <p class="text-muted text-center text-sm mt-3">
+                        Applications will be saved as drafts. You can review and submit them from your Applications page.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

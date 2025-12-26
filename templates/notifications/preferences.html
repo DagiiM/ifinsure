@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Preferences - ifinsure{% endblock %}
+
+{% block content %}
+<div class="preferences-page">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <a href="{% url 'notifications:list' %}" class="back-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                Back to Notifications
+            </a>
+            <h1 class="page-title">Notification Preferences</h1>
+            <p class="page-subtitle">Control how and when you receive notifications</p>
+        </div>
+    </div>
+
+    <form method="post" class="preferences-form">
+        {% csrf_token %}
+        
+        <!-- Channels Section -->
+        <div class="settings-section">
+            <div class="section-header">
+                <h2>Notification Channels</h2>
+                <p>Choose how you want to receive notifications</p>
+            </div>
+            <div class="settings-grid">
+                <label class="toggle-card">
+                    <div class="toggle-content">
+                        <div class="toggle-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            </svg>
+                        </div>
+                        <div class="toggle-text">
+                            <h4>In-App</h4>
+                            <p>Notifications within the application</p>
+                        </div>
+                    </div>
+                    <input type="checkbox" name="in_app_enabled" {% if object.in_app_enabled %}checked{% endif %} class="toggle-input">
+                </label>
+                
+                <label class="toggle-card">
+                    <div class="toggle-content">
+                        <div class="toggle-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </div>
+                        <div class="toggle-text">
+                            <h4>Email</h4>
+                            <p>Receive notifications via email</p>
+                        </div>
+                    </div>
+                    <input type="checkbox" name="email_enabled" {% if object.email_enabled %}checked{% endif %} class="toggle-input">
+                </label>
+                
+                <label class="toggle-card">
+                    <div class="toggle-content">
+                        <div class="toggle-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"></path>
+                            </svg>
+                        </div>
+                        <div class="toggle-text">
+                            <h4>SMS</h4>
+                            <p>Text message notifications</p>
+                        </div>
+                    </div>
+                    <input type="checkbox" name="sms_enabled" {% if object.sms_enabled %}checked{% endif %} class="toggle-input">
+                </label>
+                
+                <label class="toggle-card">
+                    <div class="toggle-content">
+                        <div class="toggle-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                            </svg>
+                        </div>
+                        <div class="toggle-text">
+                            <h4>Push Notifications</h4>
+                            <p>Browser push notifications</p>
+                        </div>
+                    </div>
+                    <input type="checkbox" name="push_enabled" {% if object.push_enabled %}checked{% endif %} class="toggle-input">
+                </label>
+            </div>
+        </div>
+
+        <!-- Notification Types Section -->
+        <div class="settings-section">
+            <div class="section-header">
+                <h2>Notification Types</h2>
+                <p>Select which types of notifications you want to receive</p>
+            </div>
+            
+            <div class="settings-group">
+                <h3>Policy Notifications</h3>
+                <div class="checkbox-list">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_policy_created" {% if object.notify_policy_created %}checked{% endif %}>
+                        <span>New policy created</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_policy_updated" {% if object.notify_policy_updated %}checked{% endif %}>
+                        <span>Policy updates</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_policy_expiring" {% if object.notify_policy_expiring %}checked{% endif %}>
+                        <span>Policy expiring soon</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_policy_expired" {% if object.notify_policy_expired %}checked{% endif %}>
+                        <span>Policy expired</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-group">
+                <h3>Claim Notifications</h3>
+                <div class="checkbox-list">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_claim_submitted" {% if object.notify_claim_submitted %}checked{% endif %}>
+                        <span>Claim submitted</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_claim_updated" {% if object.notify_claim_updated %}checked{% endif %}>
+                        <span>Claim status updates</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_claim_approved" {% if object.notify_claim_approved %}checked{% endif %}>
+                        <span>Claim approved</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_claim_rejected" {% if object.notify_claim_rejected %}checked{% endif %}>
+                        <span>Claim rejected</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-group">
+                <h3>Payment Notifications</h3>
+                <div class="checkbox-list">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_payment_due" {% if object.notify_payment_due %}checked{% endif %}>
+                        <span>Payment due reminders</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_payment_received" {% if object.notify_payment_received %}checked{% endif %}>
+                        <span>Payment received</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_payment_overdue" {% if object.notify_payment_overdue %}checked{% endif %}>
+                        <span>Overdue payment alerts</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-group">
+                <h3>System Notifications</h3>
+                <div class="checkbox-list">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_system_updates" {% if object.notify_system_updates %}checked{% endif %}>
+                        <span>System updates</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_security_alerts" {% if object.notify_security_alerts %}checked{% endif %}>
+                        <span>Security alerts</span>
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="notify_promotions" {% if object.notify_promotions %}checked{% endif %}>
+                        <span>Marketing & promotions</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiet Hours Section -->
+        <div class="settings-section">
+            <div class="section-header">
+                <h2>Quiet Hours</h2>
+                <p>Set times when you don't want to receive notifications</p>
+            </div>
+            <div class="quiet-hours-settings">
+                <label class="toggle-card full-width">
+                    <div class="toggle-content">
+                        <div class="toggle-text">
+                            <h4>Enable Quiet Hours</h4>
+                            <p>Pause notifications during specified hours</p>
+                        </div>
+                    </div>
+                    <input type="checkbox" name="quiet_hours_enabled" {% if object.quiet_hours_enabled %}checked{% endif %} class="toggle-input" id="quietHoursToggle">
+                </label>
+                
+                <div class="time-inputs" id="quietHoursInputs" style="{% if not object.quiet_hours_enabled %}display: none;{% endif %}">
+                    <div class="form-group">
+                        <label for="quiet_hours_start">Start Time</label>
+                        <input type="time" name="quiet_hours_start" id="quiet_hours_start" value="{{ object.quiet_hours_start|default:'22:00' }}" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="quiet_hours_end">End Time</label>
+                        <input type="time" name="quiet_hours_end" id="quiet_hours_end" value="{{ object.quiet_hours_end|default:'07:00' }}" class="form-control">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-lg">
+                Save Preferences
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('quietHoursToggle').addEventListener('change', function() {
+    document.getElementById('quietHoursInputs').style.display = this.checked ? 'flex' : 'none';
+});
+</script>
+{% endblock %}

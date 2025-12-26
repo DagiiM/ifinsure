@@ -1,0 +1,588 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Agent Dashboard - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1 class="page-title">Agent Dashboard</h1>
+        <p class="page-subtitle">Welcome back, {{ request.user.get_full_name|default:request.user.email }}</p>
+    </div>
+    {% if agent.max_level >= 4 %}
+    <a href="{% url 'workflow:team_dashboard' %}" class="btn btn-outline">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+        </svg>
+        Team Dashboard
+    </a>
+    {% endif %}
+</div>
+
+<!-- Stats Cards -->
+<div class="agent-stats">
+    <div class="stat-card">
+        <div class="stat-icon blue">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">{{ queue_count }}</span>
+            <span class="stat-label">My Queue</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">{{ today.tickets_resolved }}</span>
+            <span class="stat-label">Resolved Today</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">{{ available_count }}</span>
+            <span class="stat-label">Available</span>
+        </div>
+    </div>
+    <div class="stat-card {% if overdue_count > 0 %}alert{% endif %}">
+        <div class="stat-icon red">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+        </div>
+        <div class="stat-info">
+            <span class="stat-value">{{ overdue_count }}</span>
+            <span class="stat-label">Overdue</span>
+        </div>
+    </div>
+</div>
+
+<!-- Workload and Performance -->
+<div class="agent-metrics">
+    <div class="metric-card workload">
+        <h4>Today's Workload</h4>
+        <div class="workload-bar-container">
+            <div class="workload-bar" style="width: {% widthratio agent.current_load agent.daily_capacity 100 %}%"></div>
+        </div>
+        <div class="workload-info">
+            <span>{{ agent.current_load }} / {{ agent.daily_capacity }} tickets</span>
+            <span>{% widthratio agent.current_load agent.daily_capacity 100 %}% capacity</span>
+        </div>
+    </div>
+    <div class="metric-card">
+        <h4>30-Day Performance</h4>
+        <div class="performance-grid">
+            <div class="perf-item">
+                <span class="perf-value">{{ stats.resolution_rate }}%</span>
+                <span class="perf-label">Resolution Rate</span>
+            </div>
+            <div class="perf-item">
+                <span class="perf-value">{{ stats.sla_compliance }}%</span>
+                <span class="perf-label">SLA Compliance</span>
+            </div>
+            <div class="perf-item">
+                <span class="perf-value">{{ stats.avg_resolution|default:0|floatformat:0 }}m</span>
+                <span class="perf-label">Avg Resolution</span>
+            </div>
+            <div class="perf-item">
+                <span class="perf-value">{{ stats.policies|default:0 }}</span>
+                <span class="perf-label">Policies Sold</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="agent-content">
+    <!-- My Queue -->
+    <div class="agent-section">
+        <div class="section-header">
+            <h3>My Queue</h3>
+            <a href="{% url 'workflow:my_queue' %}" class="section-link">View All ({{ queue_count }}) →</a>
+        </div>
+        
+        {% if my_queue %}
+        <div class="ticket-list">
+            {% for ticket in my_queue %}
+            <a href="{% url 'workflow:ticket_detail' reference=ticket.reference %}" class="ticket-item">
+                <div class="ticket-priority priority-{{ ticket.priority }}"></div>
+                <div class="ticket-info">
+                    <span class="ticket-ref">{{ ticket.reference }}</span>
+                    <span class="ticket-subject">{{ ticket.subject|truncatechars:50 }}</span>
+                </div>
+                <div class="ticket-meta">
+                    <span class="ticket-type">{{ ticket.get_ticket_type_display }}</span>
+                    <span class="ticket-sla {% if ticket.is_overdue %}overdue{% endif %}">
+                        {% if ticket.is_overdue %}OVERDUE{% else %}{{ ticket.time_to_sla.total_seconds|floatformat:0|divisibleby:3600 }}h{% endif %}
+                    </span>
+                </div>
+                <span class="ticket-status status-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state-mini">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="32" height="32">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p>No tickets in your queue</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Available Tickets -->
+    <div class="agent-section">
+        <div class="section-header">
+            <h3>Available Tickets</h3>
+            <a href="{% url 'workflow:available_tickets' %}" class="section-link">View All ({{ available_count }}) →</a>
+        </div>
+        
+        {% if available_tickets %}
+        <div class="ticket-list">
+            {% for ticket in available_tickets %}
+            <div class="ticket-item pickable">
+                <div class="ticket-priority priority-{{ ticket.priority }}"></div>
+                <div class="ticket-info">
+                    <span class="ticket-ref">{{ ticket.reference }}</span>
+                    <span class="ticket-subject">{{ ticket.subject|truncatechars:40 }}</span>
+                </div>
+                <div class="ticket-meta">
+                    <span class="ticket-type">{{ ticket.get_ticket_type_display }}</span>
+                    <span class="ticket-level">L{{ ticket.required_workclass_level }}</span>
+                </div>
+                <form action="{% url 'workflow:pick_ticket' reference=ticket.reference %}" method="post" class="ticket-action">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-primary">Pick</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state-mini">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="32" height="32">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+            </svg>
+            <p>No tickets available for pickup</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="agent-section full-width">
+    <div class="section-header">
+        <h3>Recent Activity</h3>
+    </div>
+    
+    {% if recent_activity %}
+    <div class="activity-timeline">
+        {% for activity in recent_activity %}
+        <div class="activity-item">
+            <div class="activity-icon {{ activity.activity_type }}">
+                {% if activity.activity_type == 'created' %}
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                {% elif activity.activity_type == 'assigned' or activity.activity_type == 'picked' %}
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                {% elif activity.activity_type == 'resolved' %}
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                {% elif activity.activity_type == 'escalated' %}
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                {% else %}
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                {% endif %}
+            </div>
+            <div class="activity-content">
+                <span class="activity-action">
+                    <strong>{{ activity.ticket.reference }}</strong>
+                    {{ activity.get_activity_type_display|lower }}
+                    {% if activity.performed_by %}by {{ activity.performed_by.get_full_name|default:activity.performed_by.email }}{% endif %}
+                </span>
+                {% if activity.note %}
+                <p class="activity-note">"{{ activity.note|truncatechars:100 }}"</p>
+                {% endif %}
+            </div>
+            <span class="activity-time">{{ activity.created_at|timesince }} ago</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state-mini">
+        <p>No recent activity</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Agent Stats */
+.agent-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .agent-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.stat-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.stat-card.alert {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon.blue { background: #dbeafe; color: #2563eb; }
+.stat-icon.green { background: #dcfce7; color: #16a34a; }
+.stat-icon.yellow { background: #fef3c7; color: #d97706; }
+.stat-icon.red { background: #fee2e2; color: #dc2626; }
+
+.stat-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+    margin-top: 0.25rem;
+}
+
+/* Metrics */
+.agent-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .agent-metrics {
+        grid-template-columns: 1fr;
+    }
+}
+
+.metric-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.metric-card h4 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-gray-700);
+    margin-bottom: 1rem;
+}
+
+.workload-bar-container {
+    height: 8px;
+    background: var(--color-gray-100);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.workload-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.workload-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.performance-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.perf-item {
+    text-align: center;
+}
+
+.perf-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+}
+
+.perf-label {
+    font-size: 0.7rem;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+}
+
+/* Content Grid */
+.agent-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .agent-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+.agent-section {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.agent-section.full-width {
+    grid-column: 1 / -1;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.section-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+.section-link {
+    font-size: 0.875rem;
+    color: var(--color-primary-600);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+/* Ticket List */
+.ticket-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ticket-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    background: var(--color-gray-50);
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.ticket-item:hover {
+    background: var(--color-gray-100);
+}
+
+.ticket-priority {
+    width: 4px;
+    height: 32px;
+    border-radius: 2px;
+}
+
+.priority-low { background: #9ca3af; }
+.priority-medium { background: #60a5fa; }
+.priority-high { background: #f59e0b; }
+.priority-urgent { background: #ef4444; }
+
+.ticket-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.ticket-ref {
+    font-size: 0.7rem;
+    color: var(--color-gray-500);
+    font-family: monospace;
+}
+
+.ticket-subject {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ticket-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.125rem;
+}
+
+.ticket-type {
+    font-size: 0.7rem;
+    color: var(--color-gray-500);
+}
+
+.ticket-sla {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-gray-600);
+}
+
+.ticket-sla.overdue {
+    color: #dc2626;
+}
+
+.ticket-level {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.125rem 0.375rem;
+    background: var(--color-gray-200);
+    border-radius: 3px;
+    color: var(--color-gray-600);
+}
+
+.ticket-status {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.status-assigned { background: #e0e7ff; color: #4338ca; }
+.status-in_progress { background: #fef3c7; color: #92400e; }
+.status-pending_customer { background: #dbeafe; color: #1e40af; }
+
+.ticket-action {
+    margin-left: auto;
+}
+
+/* Activity Timeline */
+.activity-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--color-gray-50);
+    border-radius: 10px;
+}
+
+.activity-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.activity-icon.created { background: #dbeafe; color: #2563eb; }
+.activity-icon.assigned, .activity-icon.picked { background: #e0e7ff; color: #4338ca; }
+.activity-icon.resolved { background: #dcfce7; color: #16a34a; }
+.activity-icon.escalated { background: #fee2e2; color: #dc2626; }
+.activity-icon.note { background: #fef3c7; color: #d97706; }
+
+.activity-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.activity-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.activity-action {
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+}
+
+.activity-note {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+    font-style: italic;
+    margin: 0.25rem 0 0 0;
+}
+
+.activity-time {
+    font-size: 0.75rem;
+    color: var(--color-gray-400);
+    white-space: nowrap;
+}
+
+/* Empty State */
+.empty-state-mini {
+    text-align: center;
+    padding: 2rem;
+    color: var(--color-gray-400);
+}
+
+.empty-state-mini svg {
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-mini p {
+    font-size: 0.875rem;
+    margin: 0;
+}
+</style>
+{% endblock %}

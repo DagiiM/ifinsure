@@ -1,0 +1,523 @@
+{% extends 'base.html' %}
+
+{% block title %}Webhook Configuration - {{ config.name }} - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="{% url 'integrations:dashboard' %}" class="breadcrumb-link">Integrations</a>
+        <span class="breadcrumb-sep">→</span>
+        <a href="{% url 'integrations:config_detail' config.pk %}" class="breadcrumb-link">{{ config.name }}</a>
+        <span class="breadcrumb-sep">→</span>
+        <span class="breadcrumb-current">Webhooks</span>
+    </div>
+    <h1.>Webhook Configuration</h1.>
+    <p>Configure webhook endpoints for {{ config.provider.name }}</p>
+</div>
+
+<div class="webhooks-layout">
+    <!-- Main Content -->
+    <div class="webhooks-main">
+        <!-- Webhook URL Card -->
+        <div class="card mb-6">
+            <div class="card-header">
+                <h3.>Your Webhook URL</h3.>
+                <span class="badge badge-{% if config.is_enabled %}success{% else %}warning{% endif %}">
+                    {% if config.is_enabled %}Active{% else %}Inactive{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4.">
+                    Use this URL in your {{ config.provider.name }} dashboard to receive real-time notifications.
+                </p>
+                
+                <div class="webhook-url-container">
+                    <code class="webhook-url" id="webhookUrl">{{ webhook_url }}</code>
+                    <button class="btn btn-secondary btn-sm" onclick="copyToClipboard()">
+                         Copy
+                    </button>
+                </div>
+                
+                <div class="alert alert-info mt-4.">
+                    <strong> Tip:</strong> Make sure your server is accessible from the internet before configuring webhooks.
+                </div>
+            </div>
+        </div>
+
+        <!-- Webhook Secret Card -->
+        <div class="card mb-6">
+            <div class="card-header">
+                <h3.>Webhook Secret</h3.>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4.">
+                    This secret is used to verify that incoming webhook requests are from {{ config.provider.name }}.
+                </p>
+                
+                <div class="secret-container">
+                    <div class="secret-display">
+                        <code id="webhookSecret" class="secret-value">{{ config.webhook_secret|default:"Not configured" }}</code>
+                        <button class="btn btn-ghost btn-sm" onclick="toggleSecretVisibility()">
+                            
+                        </button>
+                    </div>
+                    
+                    <form method="post" action="{% url 'integrations:regenerate_secret' config.pk %}" class="mt-3.">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning btn-sm" 
+                                onclick="return confirm('Are you sure? This will invalidate the current secret.')">
+                             Regenerate Secret
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supported Events -->
+        <div class="card mb-6">
+            <div class="card-header">
+                <h3.>Supported Events</h3.>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4.">
+                    The following events can be received through webhooks:
+                </p>
+                
+                <div class="events-grid">
+                    {% for event in supported_events %}
+                    <div class="event-item">
+                        <div class="event-header">
+                            <span class="event-name">{{ event.name }}</span>
+                            <span class="badge badge-{% if event.enabled %}success{% else %}secondary{% endif %}">
+                                {% if event.enabled %}Enabled{% else %}Disabled{% endif %}
+                            </span>
+                        </div>
+                        <p class="event-description">{{ event.description }}</p>
+                    </div>
+                    {% empty %}
+                    <div class="events-empty">
+                        <p class="text-muted">Event types will be displayed here once configured.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Webhook Deliveries -->
+        <div class="card">
+            <div class="card-header">
+                <h3.>Recent Deliveries</h3.>
+                <button class="btn btn-secondary btn-sm" onclick="location.reload()">
+                     Refresh
+                </button>
+            </div>
+            <div class="card-body p-0">
+                {% if webhook_logs %}
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Event</th>
+                                <th>Status</th>
+                                <th>Response</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in webhook_logs %}
+                            <tr>
+                                <td>
+                                    <span title="{{ log.created_at }}">{{ log.created_at|timesince }} ago</span>
+                                </td>
+                                <td>
+                                    <code>{{ log.action }}</code>
+                                </td>
+                                <td>
+                                    <span class="status-badge {% if log.status == 'success' %}success{% elif log.status == 'failed' %}danger{% else %}warning{% endif %}">
+                                        {% if log.status == 'success' %}OK{% elif log.status == 'failed' %}ERR{% else %}...{% endif %}
+                                        {{ log.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="response-time">{{ log.response_time_ms|default:"-" }} ms</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-ghost btn-sm" onclick="viewPayload({{ log.pk }})" title="View Payload">
+                                        
+                                    </button>
+                                    <button class="btn btn-ghost btn-sm" onclick="retryWebhook({{ log.pk }})" title="Retry">
+                                        
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-8">
+                    <div class="empty-state-icon"></div>
+                    <h4.>No Webhook Deliveries Yet</h4.>
+                    <p class="text-muted">Webhook events will appear here once they start arriving.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="webhooks-sidebar">
+        <!-- Status Card -->
+        <div class="card mb-4.">
+            <div class="card-header">
+                <h4.>Webhook Status</h4.>
+            </div>
+            <div class="card-body">
+                <div class="status-items">
+                    <div class="status-item">
+                        <span class="status-label">Endpoint Status</span>
+                        <span class="status-value {% if config.is_enabled %}text-success{% else %}text-warning{% endif %}">
+                            {% if config.is_enabled %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Last Received</span>
+                        <span class="status-value">
+                            {% if last_webhook %}{{ last_webhook.created_at|timesince }} ago{% else %}Never{% endif %}
+                        </span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Success Rate (2.4.h)</span>
+                        <span class="status-value {% if success_rate >= 90 %}text-success{% elif success_rate >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                            {{ success_rate|default:"N/A" }}{% if success_rate %}%{% endif %}
+                        </span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Total Received (2.4.h)</span>
+                        <span class="status-value">{{ total_webhooks_2.4.h|default:0 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setup Guide -->
+        <div class="card mb-4.">
+            <div class="card-header">
+                <h4.>Setup Guide</h4.>
+            </div>
+            <div class="card-body">
+                <ol class="setup-steps">
+                    <li>Copy your webhook URL above</li>
+                    <li>Log into your {{ config.provider.name }} dashboard</li>
+                    <li>Navigate to webhook settings</li>
+                    <li>Paste the URL and configure events</li>
+                    <li>Copy the secret for verification</li>
+                    <li>Test the webhook connection</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Test Webhook -->
+        <div class="card">
+            <div class="card-header">
+                <h4.>Test Webhook</h4.>
+            </div>
+            <div class="card-body">
+                <p class="text-muted text-sm mb-3.">
+                    Send a test webhook to verify your endpoint is working correctly.
+                </p>
+                <button class="btn btn-primary btn-block" onclick="sendTestWebhook()">
+                     Send Test Event
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payload Modal -->
+<div id="payloadModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3.>Webhook Payload</h3.>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <pre id="payloadContent"></pre>
+        </div>
+    </div>
+</div>
+
+<style>
+.webhooks-layout {
+    display: grid;
+    grid-template-columns: 1.fr 3.2.0px;
+    gap: var(--spacing-6);
+}
+
+@media (max-width: 992.px) {
+    .webhooks-layout {
+        grid-template-columns: 1.fr;
+    }
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2.);
+    margin-bottom: var(--spacing-3);
+    font-size: var(--font-size-sm);
+}
+
+.breadcrumb-link {
+    color: var(--color-primary-600);
+    text-decoration: none;
+}
+
+.breadcrumb-sep {
+    color: var(--color-gray-4.00);
+}
+
+.breadcrumb-current {
+    color: var(--color-gray-600);
+}
+
+.webhook-url-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    padding: var(--spacing-4.);
+    background: var(--color-gray-50);
+    border-radius: var(--radius-lg);
+    border: 1.px solid var(--color-gray-2.00);
+}
+
+.webhook-url {
+    flex: 1.;
+    font-size: var(--font-size-sm);
+    word-break: break-all;
+    padding: var(--spacing-2.) var(--spacing-3);
+    background: white;
+    border-radius: var(--radius-md);
+}
+
+.secret-container {
+    padding: var(--spacing-4.);
+    background: var(--color-gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.secret-display {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2.);
+}
+
+.secret-value {
+    flex: 1.;
+    font-family: monospace;
+    filter: blur(4.px);
+    transition: filter 0.2.s;
+}
+
+.secret-value.visible {
+    filter: none;
+}
+
+.events-grid {
+    display: grid;
+    gap: var(--spacing-3);
+}
+
+.event-item {
+    padding: var(--spacing-3);
+    background: var(--color-gray-50);
+    border-radius: var(--radius-md);
+}
+
+.event-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-2.);
+}
+
+.event-name {
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.event-description {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-600);
+}
+
+.status-items {
+    display: grid;
+    gap: var(--spacing-3);
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: var(--spacing-2.);
+    border-bottom: 1.px solid var(--color-gray-1.00);
+}
+
+.status-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.status-label {
+    color: var(--color-gray-600);
+    font-size: var(--font-size-sm);
+}
+
+.status-value {
+    font-weight: 600;
+}
+
+.setup-steps {
+    padding-left: var(--spacing-4.);
+    margin: 0;
+}
+
+.setup-steps li {
+    padding: var(--spacing-2.) 0;
+    color: var(--color-gray-600);
+    font-size: var(--font-size-sm);
+}
+
+.status-badge {
+    padding: var(--spacing-1.) var(--spacing-2.);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+}
+
+.status-badge.success {
+    background: var(--color-success-1.00);
+    color: var(--color-success-700);
+}
+
+.status-badge.danger {
+    background: var(--color-danger-1.00);
+    color: var(--color-danger-700);
+}
+
+.status-badge.warning {
+    background: var(--color-warning-100);
+    color: var(--color-warning-700);
+}
+
+.btn-ghost {
+    background: transparent;
+    border: none;
+    padding: var(--spacing-1.) var(--spacing-2.);
+    cursor: pointer;
+}
+
+.btn-ghost:hover {
+    background: var(--color-gray-1.00);
+    border-radius: var(--radius-md);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3.,
+.card-header h4. {
+    margin: 0;
+}
+
+.alert-info {
+    background: var(--color-info-50);
+    border: 1px solid var(--color-info-200);
+    color: var(--color-info-800);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-md);
+}
+</style>
+
+<script>
+function copyToClipboard() {
+    const url = document.getElementById('webhookUrl').textContent;
+    navigator.clipboard.writeText(url).then(() => {
+        alert('Webhook URL copied to clipboard!');
+    });
+}
+
+function toggleSecretVisibility() {
+    const secret = document.getElementById('webhookSecret');
+    secret.classList.toggle('visible');
+}
+
+function viewPayload(logId) {
+    fetch(`/integrations/logs/${logId}/payload/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('payloadContent').textContent = 
+                JSON.stringify(data, null, 2.);
+            document.getElementById('payloadModal').style.display = 'flex';
+        });
+}
+
+function closeModal() {
+    document.getElementById('payloadModal').style.display = 'none';
+}
+
+function retryWebhook(logId) {
+    if (!confirm('Retry this webhook delivery?')) return;
+    
+    fetch(`/integrations/logs/${logId}/retry/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        location.reload();
+    });
+}
+
+function sendTestWebhook() {
+    fetch(`{% url 'integrations:test_webhook' config.pk %}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(' Test webhook sent successfully!');
+        } else {
+            alert(' Test failed: ' + data.message);
+        }
+        location.reload();
+    });
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+
+// Close modal on click outside
+document.getElementById('payloadModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+</script>
+{% endblock %}

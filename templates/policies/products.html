@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Insurance Products - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Insurance Products</h1>
+    <p>Browse our range of insurance products and find the right coverage for you</p>
+</div>
+
+<!-- Category Filter -->
+<div class="flex gap-2 mb-6 flex-wrap">
+    <a href="{% url 'policies:products' %}" class="btn {% if not selected_category %}btn-primary{% else %}btn-secondary{% endif %}">
+        All
+    </a>
+    {% for code, name in categories %}
+    <a href="{% url 'policies:products' %}?category={{ code }}" class="btn {% if selected_category == code %}btn-primary{% else %}btn-secondary{% endif %}">
+        {{ name }}
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Products Grid -->
+{% if products %}
+<div class="grid grid-3 gap-6">
+    {% for product in products %}
+    <div class="card">
+        <div class="card-header">
+            <span class="badge badge-default mb-2">{{ product.get_category_display }}</span>
+            <h3 class="text-lg mb-0">{{ product.name }}</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-sm text-muted mb-4">
+                {{ product.short_description|default:product.description|truncatechars:100 }}
+            </p>
+            
+            <div class="mb-4">
+                <div class="text-sm text-muted">Starting from</div>
+                <div class="text-xl font-bold text-primary">
+                    KES {{ product.base_premium|intcomma }}<span class="text-sm font-normal text-muted">/year</span>
+                </div>
+            </div>
+            
+            <div class="text-sm text-muted mb-4">
+                Coverage: KES {{ product.min_coverage|intcomma }} - {{ product.max_coverage|intcomma }}
+            </div>
+        </div>
+        <div class="card-footer flex gap-2">
+            <a href="{% url 'policies:product_detail' product.pk %}" class="btn btn-secondary flex-1">Details</a>
+            <a href="{% url 'policies:apply' %}?product={{ product.pk }}" class="btn btn-primary flex-1">Apply</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-state-icon">📦</div>
+        <h3>No Products Available</h3>
+        <p>No products match your filter criteria.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}M-Pesa Payment - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'wallets:wallet' %}">Wallet</a>
+            <span>›</span>
+            <a href="{% url 'wallets:deposit' %}">Deposit</a>
+            <span>›</span>
+            <span>M-Pesa</span>
+        </nav>
+        <h1 class="page-title">Pay with M-Pesa</h1>
+        <p class="page-subtitle">Enter your phone number to receive the payment prompt</p>
+    </div>
+</div>
+
+<div class="mpesa-container">
+    <div class="mpesa-card">
+        <!-- Payment Amount -->
+        <div class="mpesa-amount-section">
+            <div class="mpesa-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="40" height="40">
+                    <rect x="5" y="2" width="14" height="20" rx="2" stroke-width="1.5"/>
+                    <path d="M12 18h.01" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="mpesa-amount-info">
+                <span class="mpesa-label">Amount to Pay</span>
+                <span class="mpesa-amount">{{ payment.currency }} {{ payment.amount|floatformat:0|intcomma }}</span>
+            </div>
+        </div>
+        
+        <div class="mpesa-ref">
+            Reference: <strong>{{ payment.reference }}</strong>
+        </div>
+        
+        <!-- Phone Number Form -->
+        <form method="post" class="mpesa-form">
+            {% csrf_token %}
+            
+            <div class="phone-input-group">
+                <div class="phone-prefix">
+                    <span class="flag">🇰🇪</span>
+                    <span>+254</span>
+                </div>
+                <input type="tel" name="phone_number" id="phone_number" 
+                       placeholder="7XX XXX XXX" 
+                       value="{{ payment.payment_details.phone_number|default:'' }}"
+                       pattern="[0-9]{9,10}"
+                       required
+                       class="phone-input">
+            </div>
+            <span class="input-hint">Enter your M-Pesa registered phone number</span>
+            
+            <button type="submit" class="btn btn-mpesa btn-lg btn-block">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="22" height="22">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+                Send STK Push
+            </button>
+        </form>
+        
+        <!-- How it works -->
+        <div class="mpesa-steps">
+            <h4>How it works:</h4>
+            <ol>
+                <li>Enter your M-Pesa phone number above</li>
+                <li>Click "Send STK Push"</li>
+                <li>Check your phone for the Safaricom prompt</li>
+                <li>Enter your M-Pesa PIN to confirm</li>
+                <li>Your wallet will be credited instantly!</li>
+            </ol>
+        </div>
+    </div>
+    
+    <!-- Cancel Option -->
+    <div class="mpesa-cancel">
+        <a href="{% url 'wallets:deposit' %}" class="btn btn-ghost">
+            ← Choose different method
+        </a>
+    </div>
+</div>
+
+<style>
+.mpesa-container {
+    max-width: 440px;
+    margin: 0 auto;
+}
+
+.mpesa-card {
+    background: white;
+    border-radius: 24px;
+    padding: 2rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+}
+
+.mpesa-amount-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    border-radius: 16px;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.mpesa-logo {
+    width: 56px;
+    height: 56px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mpesa-amount-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.mpesa-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.mpesa-amount {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.mpesa-ref {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.mpesa-form {
+    margin-bottom: 1.5rem;
+}
+
+.phone-input-group {
+    display: flex;
+    border: 2px solid var(--color-gray-200);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s;
+}
+
+.phone-input-group:focus-within {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
+}
+
+.phone-prefix {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 1rem;
+    background: var(--color-gray-50);
+    font-weight: 600;
+    color: var(--color-gray-700);
+    border-right: 1px solid var(--color-gray-200);
+}
+
+.flag {
+    font-size: 1.25rem;
+}
+
+.phone-input {
+    flex: 1;
+    padding: 1rem;
+    border: none;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    outline: none;
+}
+
+.phone-input::placeholder {
+    color: var(--color-gray-300);
+    font-weight: 400;
+}
+
+.input-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    margin-top: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.btn-mpesa {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: white;
+    border: none;
+    gap: 0.5rem;
+}
+
+.btn-mpesa:hover {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: white;
+}
+
+.mpesa-steps {
+    background: var(--color-gray-50);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.mpesa-steps h4 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-gray-700);
+    margin-bottom: 0.75rem;
+}
+
+.mpesa-steps ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.875rem;
+    color: var(--color-gray-600);
+    line-height: 1.8;
+}
+
+.mpesa-cancel {
+    text-align: center;
+    margin-top: 1.5rem;
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--color-gray-500);
+    border: none;
+}
+
+.btn-ghost:hover {
+    color: var(--color-gray-700);
+    background: var(--color-gray-100);
+}
+
+.btn-block {
+    width: 100%;
+    justify-content: center;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-600);
+}
+
+.breadcrumb span {
+    color: var(--color-gray-400);
+}
+</style>
+{% endblock %}

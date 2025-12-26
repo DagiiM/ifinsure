@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Submit Claim - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumbs">
+        <a href="{% url 'claims:list' %}">Claims</a>
+        <span>/</span>
+        <span>Submit New</span>
+    </div>
+    <h1>Submit a Claim</h1>
+    <p>Provide details about your incident to file a claim</p>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger mb-6">
+        {% for error in form.non_field_errors %}
+            {{ error }}
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="grid grid-2 gap-6">
+        <div class="card">
+            <div class="card-header">
+                <h4>Claim Details</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">Policy *</label>
+                    {{ form.policy }}
+                    <span class="form-hint">Select the policy this claim is for</span>
+                    {{ form.policy.errors }}
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Claimed Amount *</label>
+                    {{ form.claimed_amount }}
+                    {{ form.claimed_amount.errors }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h4>Incident Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label">Incident Date *</label>
+                        {{ form.incident_date }}
+                        {{ form.incident_date.errors }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Incident Time</label>
+                        {{ form.incident_time }}
+                        {{ form.incident_time.errors }}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    {{ form.incident_location }}
+                    {{ form.incident_location.errors }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="grid-column: span 2;">
+            <div class="card-header">
+                <h4>Description</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group mb-0">
+                    <label class="form-label">What happened? *</label>
+                    {{ form.incident_description }}
+                    <span class="form-hint">Provide as much detail as possible about the incident</span>
+                    {{ form.incident_description.errors }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="flex gap-3 mt-6">
+        <button type="submit" class="btn btn-primary btn-lg">Create Claim</button>
+        <a href="{% url 'claims:list' %}" class="btn btn-secondary btn-lg">Cancel</a>
+    </div>
+    
+    <p class="text-sm text-muted mt-4">
+        After creating the claim, you can add supporting documents and then submit for review.
+    </p>
+</form>
+{% endblock %}

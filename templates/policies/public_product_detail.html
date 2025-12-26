@@ -1,0 +1,560 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.name }} - ifinsure</title>
+    <meta name="description" content="{{ product.short_description|default:product.description|truncatechars:160 }}">
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
+    <link rel="stylesheet" href="{% static 'css/variables.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <style>
+        :root {
+            --color-primary-50: #eef2ff;
+            --color-primary-100: #e0e7ff;
+            --color-primary-500: #6366f1;
+            --color-primary-600: #4f46e5;
+            --color-primary-700: #4338ca;
+            --color-gray-50: #f9fafb;
+            --color-gray-100: #f3f4f6;
+            --color-gray-200: #e5e7eb;
+            --color-gray-400: #9ca3af;
+            --color-gray-500: #6b7280;
+            --color-gray-600: #4b5563;
+            --color-gray-700: #374151;
+            --color-gray-900: #111827;
+            --color-success: #10b981;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--color-gray-50);
+            color: var(--color-gray-900);
+            line-height: 1.6;
+        }
+        
+        /* Page-specific overrides */
+        .header-inner {
+            max-width: 1200px;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary { background: var(--color-primary-600); color: white; }
+        .btn-primary:hover { background: var(--color-primary-700); }
+        .btn-outline { background: white; color: var(--color-gray-700); border: 1px solid var(--color-gray-200); }
+        .btn-outline:hover { border-color: var(--color-primary-500); color: var(--color-primary-600); }
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.85rem; }
+        .btn-lg { padding: 1rem 2rem; font-size: 1rem; }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+        
+        .breadcrumb a {
+            color: var(--color-gray-500);
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            color: var(--color-primary-600);
+        }
+        
+        .breadcrumb span {
+            color: var(--color-gray-400);
+        }
+        
+        .product-layout {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 3rem;
+            align-items: start;
+        }
+        
+        @media (max-width: 900px) {
+            .product-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .product-main {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .product-header {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--color-gray-100);
+        }
+        
+        .product-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .product-header-content h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+        
+        .category-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .category-life { background: #e0e7ff; color: #4338ca; }
+        .category-health { background: #dcfce7; color: #15803d; }
+        .category-auto { background: #fef3c7; color: #b45309; }
+        .category-home { background: #fce7f3; color: #be185d; }
+        .category-business { background: #dbeafe; color: #1d4ed8; }
+        .category-travel { background: #ccfbf1; color: #0d9488; }
+        
+        .product-description {
+            color: var(--color-gray-600);
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+        
+        .features-section h3 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--color-gray-50);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .feature-icon {
+            color: var(--color-success);
+            flex-shrink: 0;
+        }
+        
+        .coverage-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--color-gray-100);
+        }
+        
+        .coverage-section h3 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .coverage-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        
+        .coverage-card {
+            text-align: center;
+            padding: 1.25rem;
+            background: var(--color-gray-50);
+            border-radius: 12px;
+        }
+        
+        .coverage-label {
+            font-size: 0.75rem;
+            color: var(--color-gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .coverage-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--color-gray-900);
+        }
+        
+        /* Sidebar / Quote Card */
+        .quote-card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 2rem;
+        }
+        
+        .quote-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        
+        .price-display {
+            text-align: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--color-primary-50), var(--color-primary-100));
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .price-from {
+            font-size: 0.875rem;
+            color: var(--color-gray-500);
+        }
+        
+        .price-amount {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--color-primary-700);
+            line-height: 1;
+            margin: 0.5rem 0;
+        }
+        
+        .price-period {
+            font-size: 0.875rem;
+            color: var(--color-gray-500);
+        }
+        
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--color-gray-700);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--color-gray-200);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--color-primary-500);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        
+        .calculated-premium {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+            background: var(--color-success);
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        
+        .in-cart-notice {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: var(--color-success);
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        
+        .quote-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .quote-actions .btn {
+            width: 100%;
+        }
+        
+        /* Related Products */
+        .related-section {
+            margin-top: 3rem;
+        }
+        
+        .related-section h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .related-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .related-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+        
+        .related-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .related-card h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .related-card p {
+            font-size: 0.875rem;
+            color: var(--color-gray-500);
+        }
+        
+        .related-price {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--color-primary-600);
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-left">
+                <a href="/" class="header-logo header-logo-gradient">ifinsure</a>
+                <nav class="header-nav">
+                    <a href="{% url 'policies:products' %}" class="header-nav-link">Products</a>
+                </nav>
+            </div>
+            
+            <div class="header-right">
+                <a href="{% url 'policies:cart' %}" class="header-cart">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span>Cart</span>
+                    {% if cart|length > 0 %}
+                    <span class="header-cart-badge">{{ cart|length }}</span>
+                    {% endif %}
+                </a>
+                
+                <span class="header-divider"></span>
+                
+                {% if user.is_authenticated %}
+                <a href="{% url 'dashboard:home' %}" class="btn btn-outline btn-sm">Dashboard</a>
+                {% else %}
+                <a href="{% url 'accounts:login' %}" class="btn btn-outline btn-sm">Log In</a>
+                <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Get Started</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="/">Home</a>
+            <span>›</span>
+            <a href="{% url 'policies:products' %}">Products</a>
+            <span>›</span>
+            <a href="{% url 'policies:products' %}?category={{ product.category }}">{{ product.get_category_display }}</a>
+            <span>›</span>
+            {{ product.name }}
+        </nav>
+        
+        <div class="product-layout">
+            <div class="product-main">
+                <div class="product-header">
+                    <div class="product-icon category-{{ product.category }}" style="background: currentColor;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <div class="product-header-content">
+                        <span class="category-badge category-{{ product.category }}">{{ product.get_category_display }}</span>
+                        <h1>{{ product.name }}</h1>
+                        <p style="color: var(--color-gray-500);">{{ product.code }}</p>
+                    </div>
+                </div>
+                
+                <div class="product-description">
+                    {{ product.description }}
+                </div>
+                
+                {% if product.features %}
+                <div class="features-section">
+                    <h3>What's Covered</h3>
+                    <div class="features-grid">
+                        {% for feature in product.features %}
+                        <div class="feature-item">
+                            <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                            {{ feature }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="coverage-section">
+                    <h3>Coverage Details</h3>
+                    <div class="coverage-grid">
+                        <div class="coverage-card">
+                            <div class="coverage-label">Minimum Coverage</div>
+                            <div class="coverage-value">KES {{ product.min_coverage|floatformat:0 }}</div>
+                        </div>
+                        <div class="coverage-card">
+                            <div class="coverage-label">Maximum Coverage</div>
+                            <div class="coverage-value">KES {{ product.max_coverage|floatformat:0 }}</div>
+                        </div>
+                        <div class="coverage-card">
+                            <div class="coverage-label">Term Range</div>
+                            <div class="coverage-value">{{ product.min_term_months }}-{{ product.max_term_months }} mo</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="quote-card">
+                <h3>Get a Quote</h3>
+                
+                <div class="price-display">
+                    <div class="price-from">Starting from</div>
+                    <div class="price-amount">KES {{ product.base_premium|floatformat:0 }}</div>
+                    <div class="price-period">per month</div>
+                </div>
+                
+                {% if in_cart %}
+                <div class="in-cart-notice">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                    Already in your cart
+                </div>
+                <div class="quote-actions">
+                    <a href="{% url 'policies:cart' %}" class="btn btn-primary btn-lg">View Cart</a>
+                    <a href="{% url 'policies:products' %}" class="btn btn-outline">Continue Shopping</a>
+                </div>
+                {% else %}
+                <form method="post" action="{% url 'policies:cart_add' product.pk %}">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label for="coverage_amount">Coverage Amount (KES)</label>
+                        <input type="number" id="coverage_amount" name="coverage_amount" 
+                               value="{{ product.min_coverage|floatformat:0 }}"
+                               min="{{ product.min_coverage|floatformat:0 }}"
+                               max="{{ product.max_coverage|floatformat:0 }}"
+                               step="10000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="term_months">Term (Months)</label>
+                        <select id="term_months" name="term_months">
+                            <option value="12">12 months</option>
+                            <option value="24">24 months</option>
+                            <option value="36">36 months</option>
+                            <option value="60">60 months</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="payment_frequency">Payment Frequency</label>
+                        <select id="payment_frequency" name="payment_frequency">
+                            <option value="monthly">Monthly</option>
+                            <option value="quarterly">Quarterly</option>
+                            <option value="semi_annual">Semi-Annual</option>
+                            <option value="annual">Annual</option>
+                        </select>
+                    </div>
+                    
+                    <div class="quote-actions">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;"><path d="M12 5v14M5 12h14"/></svg>
+                            Add to Cart
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if related_products %}
+        <div class="related-section">
+            <h3>Related Products</h3>
+            <div class="related-grid">
+                {% for related in related_products %}
+                <a href="{% url 'policies:product_detail' related.pk %}" class="related-card">
+                    <span class="category-badge category-{{ related.category }}" style="font-size: 0.65rem; margin-bottom: 0.5rem;">{{ related.get_category_display }}</span>
+                    <h4>{{ related.name }}</h4>
+                    <p>{{ related.short_description|default:related.description|truncatechars:60 }}</p>
+                    <div class="related-price">From KES {{ related.base_premium|floatformat:0 }}/mo</div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

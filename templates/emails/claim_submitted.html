@@ -1,0 +1,82 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}Claim Submitted - ifinsure{% endblock %}
+
+{% block content %}
+<p class="email-greeting">Claim Submitted Successfully </p>
+
+<p class="email-text">
+    Dear {{ user.first_name }},
+</p>
+
+<p class="email-text">
+    Your claim has been submitted and received by our team. We understand this may be a difficult time, and we're committed to processing your claim as quickly as possible.
+</p>
+
+<div class="alert alert-info">
+     Your claim is now being processed by our claims team.
+</div>
+
+<div class="highlight-box">
+    <p class="highlight-box-title">Claim Details</p>
+    <div class="highlight-item">
+        <span class="highlight-label">Claim Number</span>
+        <span class="highlight-value">{{ claim.claim_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Policy Number</span>
+        <span class="highlight-value">{{ claim.policy.policy_number }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Claim Type</span>
+        <span class="highlight-value">{{ claim.get_claim_type_display }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Incident Date</span>
+        <span class="highlight-value">{{ claim.incident_date|date:"F d, Y" }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Amount Claimed</span>
+        <span class="highlight-value">KES {{ claim.amount_claimed|floatformat:0|intcomma }}</span>
+    </div>
+    <div class="highlight-item">
+        <span class="highlight-label">Status</span>
+        <span class="highlight-value">
+            <span class="status-badge status-info">Under Review</span>
+        </span>
+    </div>
+</div>
+
+<p class="email-text">
+    <strong>What happens next?</strong>
+</p>
+
+<ul style="color: #4b5563; margin: 16px 0 24px 20px;">
+    <li style="margin-bottom: 8px;">1. A claims officer will be assigned to your case</li>
+    <li style="margin-bottom: 8px;">2. Your claim will be reviewed (usually within 3-5 business days)</li>
+    <li style="margin-bottom: 8px;">3. We may contact you for additional information or documents</li>
+    <li style="margin-bottom: 8px;">4. You'll receive an email notification with the outcome</li>
+</ul>
+
+<div class="button-container">
+    <a href="{{ site_url }}/claims/{{ claim.pk }}/" class="button">Track Claim Status</a>
+</div>
+
+<div class="alert alert-warning">
+     <strong>Required Documents:</strong> Please ensure you've uploaded all required supporting documents to avoid delays in processing.
+</div>
+
+<p class="email-text">
+    <strong>Need to add more information?</strong><br>
+    You can update your claim or upload additional documents through your dashboard at any time.
+</p>
+
+<p class="email-text">
+    If you have any questions about your claim, please contact our claims team or reply to this email.
+</p>
+
+<p class="email-text">
+    Best regards,<br>
+    <strong>The ifinsure Claims Team</strong>
+</p>
+{% endblock %}

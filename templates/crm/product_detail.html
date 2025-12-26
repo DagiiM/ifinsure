@@ -1,0 +1,580 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ product.name }} - ifinsure{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-content">
+        <nav class="breadcrumb">
+            <a href="{% url 'crm:dashboard' %}">CRM</a>
+            <span>›</span>
+            <a href="{% url 'crm:product_catalog' %}">Products</a>
+            <span>›</span>
+            <span>{{ product.name }}</span>
+        </nav>
+        <div class="product-header-row">
+            <div class="provider-badge" style="background: {{ product.provider.primary_color|default:'#6366f1' }}">
+                {{ product.provider.name }}
+            </div>
+            <span class="category-badge">{{ product.category.name }}</span>
+            {% if product.featured %}
+            <span class="featured-badge">⭐ Featured</span>
+            {% endif %}
+        </div>
+        <h1 class="page-title">{{ product.name }}</h1>
+    </div>
+</div>
+
+<div class="product-layout">
+    <!-- Main Content -->
+    <div class="product-main">
+        <!-- Description -->
+        <div class="product-section">
+            <h3>Description</h3>
+            <p>{{ product.description|default:"No description available"|linebreaks }}</p>
+        </div>
+        
+        <!-- Benefits -->
+        {% if benefits %}
+        <div class="product-section">
+            <h3>Coverage & Benefits</h3>
+            <div class="benefits-list">
+                {% for benefit in benefits %}
+                <div class="benefit-item {% if not benefit.is_included %}optional{% endif %}">
+                    <div class="benefit-icon">
+                        {% if benefit.is_included %}
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        {% else %}
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    <div class="benefit-info">
+                        <span class="benefit-name">{{ benefit.name }}</span>
+                        <span class="benefit-coverage">{{ benefit.coverage_description|default:"-" }}</span>
+                    </div>
+                    {% if benefit.is_optional %}
+                    <span class="benefit-optional">Optional</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Exclusions -->
+        {% if product.exclusions %}
+        <div class="product-section">
+            <h3>Exclusions</h3>
+            <div class="exclusions-content">
+                {{ product.exclusions|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Terms -->
+        {% if product.terms_conditions %}
+        <div class="product-section collapsible">
+            <h3>Terms & Conditions</h3>
+            <div class="terms-content">
+                {{ product.terms_conditions|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="product-sidebar">
+        <!-- Pricing Card -->
+        <div class="pricing-card">
+            <h4>Pricing</h4>
+            <div class="pricing-main">
+                {% if product.premium_type == 'percentage' %}
+                <span class="price-value">{{ product.base_premium }}%</span>
+                <span class="price-label">of sum insured</span>
+                {% elif product.premium_type == 'fixed' %}
+                <span class="price-value">KES {{ product.base_premium|floatformat:0|intcomma }}</span>
+                <span class="price-label">per {{ product.default_duration_months }} month(s)</span>
+                {% else %}
+                <span class="price-value">Calculated</span>
+                <span class="price-label">based on risk factors</span>
+                {% endif %}
+            </div>
+            {% if product.min_premium > 0 %}
+            <div class="pricing-detail">
+                <span>Minimum Premium:</span>
+                <span>KES {{ product.min_premium|floatformat:0|intcomma }}</span>
+            </div>
+            {% endif %}
+            {% if product.min_sum_insured > 0 %}
+            <div class="pricing-detail">
+                <span>Min Sum Insured:</span>
+                <span>KES {{ product.min_sum_insured|floatformat:0|intcomma }}</span>
+            </div>
+            {% endif %}
+            {% if product.max_sum_insured %}
+            <div class="pricing-detail">
+                <span>Max Sum Insured:</span>
+                <span>KES {{ product.max_sum_insured|floatformat:0|intcomma }}</span>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Commission Card -->
+        <div class="commission-card">
+            <h4>Commission</h4>
+            <div class="commission-main">
+                <span class="commission-value">{{ product.effective_commission_rate }}%</span>
+                <span class="commission-label">
+                    {% if product.commission_type == 'percentage' %}of premium{% else %}fixed{% endif %}
+                </span>
+            </div>
+        </div>
+        
+        <!-- Provider Card -->
+        <div class="provider-card">
+            <h4>Provider</h4>
+            <div class="provider-info">
+                <div class="provider-logo" style="background: {{ product.provider.primary_color|default:'#6366f1' }}">
+                    {{ product.provider.code }}
+                </div>
+                <div class="provider-details">
+                    <span class="provider-name">{{ product.provider.name }}</span>
+                    {% if product.provider.phone %}
+                    <span class="provider-contact">{{ product.provider.phone }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <a href="{% url 'crm:provider_detail' pk=product.provider.pk %}" class="view-provider-btn">View Provider →</a>
+        </div>
+        
+        <!-- Documents -->
+        <div class="documents-card">
+            <h4>Documents</h4>
+            {% if product.brochure %}
+            <a href="{{ product.brochure.url }}" class="document-link" target="_blank">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                </svg>
+                Download Brochure
+            </a>
+            {% endif %}
+            {% if product.policy_wording %}
+            <a href="{{ product.policy_wording.url }}" class="document-link" target="_blank">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Policy Wording
+            </a>
+            {% endif %}
+            {% if not product.brochure and not product.policy_wording %}
+            <p class="no-documents">No documents available</p>
+            {% endif %}
+        </div>
+        
+        <!-- Product Info -->
+        <div class="info-card">
+            <h4>Product Info</h4>
+            <div class="info-row">
+                <span>Code:</span>
+                <span>{{ product.code }}</span>
+            </div>
+            <div class="info-row">
+                <span>Duration:</span>
+                <span>{{ product.default_duration_months }} month(s)</span>
+            </div>
+            <div class="info-row">
+                <span>Underwriting:</span>
+                <span>{% if product.requires_underwriting %}Required{% else %}Auto{% endif %}</span>
+            </div>
+            <div class="info-row">
+                <span>Auto Renew:</span>
+                <span>{% if product.auto_renew_enabled %}Yes{% else %}No{% endif %}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Related Products -->
+{% if related_products %}
+<div class="related-section">
+    <h3>Related Products</h3>
+    <div class="related-grid">
+        {% for prod in related_products %}
+        <a href="{% url 'crm:product_detail' code=prod.code %}" class="related-card">
+            <div class="related-provider" style="background: {{ prod.provider.primary_color|default:'#6366f1' }}">
+                {{ prod.provider.code }}
+            </div>
+            <h4>{{ prod.name }}</h4>
+            <span class="related-rate">{{ prod.effective_commission_rate }}% comm.</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<style>
+.product-header-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.provider-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+}
+
+.category-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-gray-600);
+    background: var(--color-gray-100);
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+}
+
+.featured-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #d97706;
+    background: #fef3c7;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+}
+
+.product-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .product-layout { grid-template-columns: 1fr; }
+}
+
+.product-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.product-section {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.product-section h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: 1rem;
+}
+
+.benefits-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--color-gray-50);
+    border-radius: 10px;
+}
+
+.benefit-item.optional {
+    background: #fef3c7;
+}
+
+.benefit-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #dcfce7;
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.benefit-item.optional .benefit-icon {
+    background: #fde68a;
+    color: #92400e;
+}
+
+.benefit-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.benefit-name {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.benefit-coverage {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.benefit-optional {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #92400e;
+}
+
+.exclusions-content, .terms-content {
+    color: var(--color-gray-600);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* Sidebar */
+.product-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pricing-card, .commission-card, .provider-card, .documents-card, .info-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.pricing-card h4, .commission-card h4, .provider-card h4, .documents-card h4, .info-card h4 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.pricing-main, .commission-main {
+    text-align: center;
+    padding: 1rem;
+    background: var(--color-gray-50);
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+}
+
+.price-value, .commission-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-gray-900);
+}
+
+.commission-value {
+    color: #16a34a;
+}
+
+.price-label, .commission-label {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.pricing-detail {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.pricing-detail:last-child {
+    border-bottom: none;
+}
+
+.provider-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.provider-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.provider-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.provider-name {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.provider-contact {
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+}
+
+.view-provider-btn {
+    display: block;
+    text-align: center;
+    padding: 0.5rem;
+    background: var(--color-gray-50);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: var(--color-primary-600);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.document-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--color-gray-50);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--color-gray-700);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.document-link:hover {
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+}
+
+.no-documents {
+    font-size: 0.8rem;
+    color: var(--color-gray-400);
+    font-style: italic;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row span:first-child {
+    color: var(--color-gray-500);
+}
+
+.info-row span:last-child {
+    font-weight: 500;
+    color: var(--color-gray-900);
+}
+
+/* Related */
+.related-section {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.related-section h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.related-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 900px) {
+    .related-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.related-card {
+    background: var(--color-gray-50);
+    border-radius: 12px;
+    padding: 1rem;
+    text-decoration: none;
+}
+
+.related-card:hover {
+    background: var(--color-primary-50);
+}
+
+.related-provider {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: white;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+}
+
+.related-card h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: 0.25rem;
+}
+
+.related-rate {
+    font-size: 0.75rem;
+    color: #16a34a;
+    font-weight: 600;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.breadcrumb a {
+    color: var(--color-gray-500);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    color: var(--color-primary-600);
+}
+
+.breadcrumb span {
+    color: var(--color-gray-400);
+}
+</style>
+{% endblock %}
